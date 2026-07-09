@@ -1,0 +1,66 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ---- Secrets & env (NEVER commit) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# ---- Models & large artifacts (use HF/S3, not git) ----
+*.gguf
+*.safetensors
+*.bin
+models/
+data/raw/
+data/processed/
+*.jsonl
+
+# ---- Databases / local state ----
+*.db
+*.sqlite3
+neo4j_data/
+postgres_data/
+redis_data/
+chroma_data/
+minio_data/
+
+# ---- Node / frontend ----
+node_modules/
+horus-ui/dist/
+horus-ui/build/
+.next/
+*.local
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- Logs & reports output ----
+*.log
+logs/
+reports_output/

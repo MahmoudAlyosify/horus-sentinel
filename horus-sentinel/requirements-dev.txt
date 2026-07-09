@@ -1,0 +1,18 @@
+-r requirements.txt
+
+# ===== Testing =====
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==5.0.0
+respx==0.21.1                 # mock httpx calls in tests
+
+# ===== Quality =====
+ruff==0.6.8                   # lint + format
+mypy==1.11.2                  # static typing
+
+# ===== Security =====
+bandit==1.7.10               # static security analysis
+pip-audit==2.7.3             # dependency CVE scan
+
+# ===== Dev tooling =====
+pre-commit==3.8.0
