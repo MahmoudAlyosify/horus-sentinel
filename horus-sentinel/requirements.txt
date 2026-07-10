@@ -13,11 +13,14 @@ httpx==0.27.2                 # async HTTP for Ollama + tools
 
 # ===== Datastores =====
 psycopg[binary]==3.2.2        # PostgreSQL
-neo4j==5.24.0                 # Graph DB driver
+neo4j==5.24.0                 # Graph DB driver (optional — MVP uses networkx)
 redis==5.0.8                  # cache / queue / rate budgets
-chromadb==0.5.5               # RAG vector store
+chromadb==0.5.5               # RAG vector store (optional — MVP uses keyword retriever)
 sqlalchemy==2.0.35            # ORM for relational models
 alembic==1.13.2               # migrations
+
+# ===== Knowledge graph (MVP, always required) =====
+networkx==3.3                 # in-process Intelligence Knowledge Graph
 
 # ===== OSINT / recon tools =====
 dnspython==2.6.1

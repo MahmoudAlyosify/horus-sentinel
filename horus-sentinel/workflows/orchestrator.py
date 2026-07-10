@@ -1,17 +1,19 @@
-"""Pipeline orchestrator — runs the whole assessment end to end (master plan Part 2.3).
+"""Pipeline orchestrator — runs the whole assessment end to end (master plan Part 2.3/5.2).
 
 Pure-Python driver that runs the same fan-out/converge flow as the LangGraph definition
-(``workflows.sentinel_graph``), so the platform runs everywhere without requiring the
-LangGraph runtime. It rebuilds the AuthContext from the persisted job, runs only the
-agents the RoE + subject type warrant, then hands off to the brain and (post-validation)
-the reporting agent. Status is checkpointed to the DB at every stage — resumable.
+(``workflows.sentinel_graph``), so the platform runs everywhere without the LangGraph
+runtime. It executes the pipeline as an ordered list of **checkpointed stages**: each stage
+that finishes is recorded on the job, so a run started with ``resume=True`` skips the
+stages already done — a job **resumes after a mid-run kill** (findings persist; the graph
+is rebuilt from them).
 
 Order (Part 2.3):  authorize → osint → {geo_event, web_infra} → threat_intel → analysis
                    → [human validation] → report
 """
+
 from __future__ import annotations
 
-import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
 import structlog
@@ -22,8 +24,8 @@ from agents.osint_agent import OsintAgent
 from agents.report_agent import report_agent
 from agents.threat_intel_agent import ThreatIntelAgent
 from agents.web_infra_agent import WebInfraAgent
-from core.authorization import authorization_engine
 from core.analysis_store import save_analysis
+from core.authorization import authorization_engine
 from core.jobs import job_service
 from schemas.auth import AuthContext
 from schemas.roe import RoE, SourceCategory
@@ -31,6 +33,8 @@ from schemas.state import JobStatus
 from schemas.subject import Subject, SubjectType
 
 log = structlog.get_logger("horus.orchestrator")
+
+Stage = tuple[str, Callable[[], Awaitable[None]]]
 
 
 @dataclass
@@ -41,6 +45,7 @@ class RunSummary:
     status: str
     entity_count: int = 0
     agents_run: list[str] = field(default_factory=list)
+    skipped_stages: list[str] = field(default_factory=list)
     critical_cve_hits: int = 0
     report_paths: dict[str, str] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
@@ -58,60 +63,88 @@ class Orchestrator:
         auth = authorization_engine.authorize(job_id, subject, roe)
         return subject, roe, auth
 
-    async def run_collection(self, job_id: str) -> RunSummary:
-        """Run the enabled collection agents in the fan-out/converge order."""
-        subject, roe, auth = self._load(job_id)
-        summary = RunSummary(job_id=job_id, status=JobStatus.COLLECTING.value)
-        job_service.set_status(job_id, JobStatus.COLLECTING)
+    # ---- stage builders -----------------------------------------------------
+    def _stages(
+        self, job_id: str, subject: Subject, roe: RoE, auth: AuthContext, summary: RunSummary
+    ) -> list[Stage]:
+        """The ordered, checkpointable stages for this subject + RoE."""
+        stages: list[Stage] = []
 
         # osint first — it seeds domains/IPs the later agents build on.
         if subject.type == SubjectType.DOMAIN and roe.allows_source(SourceCategory.PUBLIC_RECORDS):
-            res = await OsintAgent().collect(subject, auth)
-            summary.agents_run.append("osint")
-            summary.errors += res.errors
-
-        # geo_event and web_infra can run concurrently once osint is done.
-        parallel = []
+            stages.append(("osint", self._collector(OsintAgent(), subject, auth, summary, "osint")))
+        # geo_event (region) and web_infra (domain) are mutually exclusive by subject type.
         if subject.type == SubjectType.REGION and roe.allows_source(SourceCategory.GEO_EVENTS):
-            parallel.append(("geo_event", GeoEventAgent().collect(subject, auth)))
+            stages.append(
+                ("geo_event", self._collector(GeoEventAgent(), subject, auth, summary, "geo_event"))
+            )
         if subject.type == SubjectType.DOMAIN and roe.allows_source(SourceCategory.WEB_INFRA):
-            parallel.append(("web_infra", WebInfraAgent().collect(subject, auth)))
-        if parallel:
-            results = await asyncio.gather(*(c for _, c in parallel))
-            for (name, _), res in zip(parallel, results, strict=True):
-                summary.agents_run.append(name)
-                summary.errors += res.errors
-
+            stages.append(
+                ("web_infra", self._collector(WebInfraAgent(), subject, auth, summary, "web_infra"))
+            )
         # threat_intel converges last — it enriches whatever the eyes discovered.
         if roe.allows_source(SourceCategory.THREAT_INTEL):
-            res = await ThreatIntelAgent().collect(subject, auth)
-            summary.agents_run.append("threat_intel")
+            stages.append(
+                (
+                    "threat_intel",
+                    self._collector(ThreatIntelAgent(), subject, auth, summary, "threat_intel"),
+                )
+            )
+        # analysis is always the final collection-side stage.
+        stages.append(("analysis", self._analysis_stage(job_id, subject, summary)))
+        return stages
+
+    def _collector(
+        self, agent, subject: Subject, auth: AuthContext, summary: RunSummary, name: str
+    ) -> Callable[[], Awaitable[None]]:
+        async def _run() -> None:
+            res = await agent.collect(subject, auth)
+            summary.agents_run.append(name)
             summary.errors += res.errors
 
-        log.info("collection_complete", job_id=job_id, agents=summary.agents_run)
-        return summary
+        return _run
 
-    async def run_analysis(self, job_id: str, summary: RunSummary | None = None) -> RunSummary:
-        """Run the HORUS brain over the correlated graph and persist the draft report card."""
-        subject, _, _ = self._load(job_id)
-        summary = summary or RunSummary(job_id=job_id, status=JobStatus.ANALYZING.value)
-        job_service.set_status(job_id, JobStatus.ANALYZING)
+    def _analysis_stage(
+        self, job_id: str, subject: Subject, summary: RunSummary
+    ) -> Callable[[], Awaitable[None]]:
+        async def _run() -> None:
+            job_service.set_status(job_id, JobStatus.ANALYZING)
+            card, graph = await analysis_agent.analyze(job_id, subject.value)
+            await save_analysis(job_id, card, graph)
+            summary.entity_count = card.entity_count
+            summary.critical_cve_hits = card.critical_cve_hits
 
-        card, graph = await analysis_agent.analyze(job_id, subject.value)
-        await save_analysis(job_id, card, graph)
+        return _run
 
-        summary.entity_count = card.entity_count
-        summary.critical_cve_hits = card.critical_cve_hits
-        summary.status = JobStatus.AWAITING_VALIDATION.value
-        job_service.set_status(job_id, JobStatus.AWAITING_VALIDATION)
-        log.info("analysis_persisted", job_id=job_id, entities=card.entity_count)
-        return summary
+    # ---- run ----------------------------------------------------------------
+    async def run(self, job_id: str, resume: bool = False) -> RunSummary:
+        """Execute the checkpointed pipeline, stopping at the human-validation checkpoint.
 
-    async def run(self, job_id: str) -> RunSummary:
-        """Collection + reasoning. Stops at AWAITING_VALIDATION (the human checkpoint)."""
+        With ``resume=True`` any stage already recorded on the job is skipped — this is how
+        a job continues after a mid-run kill.
+        """
+        subject, roe, auth = self._load(job_id)
+        summary = RunSummary(job_id=job_id, status=JobStatus.COLLECTING.value)
+        completed = set(job_service.completed_stages(job_id)) if resume else set()
+
         try:
-            summary = await self.run_collection(job_id)
-            summary = await self.run_analysis(job_id, summary)
+            job_service.set_status(job_id, JobStatus.COLLECTING)
+            for name, factory in self._stages(job_id, subject, roe, auth, summary):
+                if name in completed:
+                    summary.skipped_stages.append(name)
+                    log.info("stage_skipped_resume", job_id=job_id, stage=name)
+                    continue
+                await factory()
+                job_service.mark_stage_complete(job_id, name)
+
+            summary.status = JobStatus.AWAITING_VALIDATION.value
+            job_service.set_status(job_id, JobStatus.AWAITING_VALIDATION)
+            log.info(
+                "pipeline_paused_for_validation",
+                job_id=job_id,
+                ran=summary.agents_run,
+                skipped=summary.skipped_stages,
+            )
             return summary
         except Exception as exc:
             job_service.set_status(job_id, JobStatus.FAILED, error=str(exc))
@@ -127,11 +160,7 @@ class Orchestrator:
         job_service.set_status(job_id, JobStatus.REPORTING)
         paths = report_agent.generate(job_id, formats)
         view = job_service.get_job(job_id)
-        final = (
-            JobStatus.COMPLETED
-            if view and view.validated_by
-            else JobStatus.AWAITING_VALIDATION
-        )
+        final = JobStatus.COMPLETED if view and view.validated_by else JobStatus.AWAITING_VALIDATION
         job_service.set_status(job_id, final)
         return paths
 

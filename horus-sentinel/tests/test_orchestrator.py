@@ -1,4 +1,5 @@
 """End-to-end orchestration tests — region path is fully offline (no network)."""
+
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -55,7 +56,9 @@ async def test_run_region_pipeline_reaches_validation(_offline_brain):
 
 async def test_full_run_with_autovalidate_produces_report(_offline_brain):
     job_id = _region_job()
-    summary = await orchestrator.run_full(job_id, auto_validate_by="analyst_demo", formats=["html", "json"])
+    summary = await orchestrator.run_full(
+        job_id, auto_validate_by="analyst_demo", formats=["html", "json"]
+    )
     assert summary.status == JobStatus.COMPLETED.value
     assert "html" in summary.report_paths
     html_path = Path(summary.report_paths["html"])

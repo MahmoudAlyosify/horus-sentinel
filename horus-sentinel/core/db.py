@@ -41,6 +41,8 @@ class JobRecord(Base):
     report_path: Mapped[str | None] = mapped_column(String(512), default=None)
     validated_by: Mapped[str | None] = mapped_column(String(128), default=None)
     error: Mapped[str | None] = mapped_column(Text, default=None)
+    # JSON list of pipeline stages already completed — the resume checkpoint (Phase 5.2).
+    checkpoint_json: Mapped[str] = mapped_column(Text, default="[]")
 
     audit_entries: Mapped[list[AuditRecord]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
@@ -50,10 +52,12 @@ class JobRecord(Base):
     )
 
     def subject(self) -> dict[str, Any]:
-        return json.loads(self.subject_json)
+        data: dict[str, Any] = json.loads(self.subject_json)
+        return data
 
     def roe(self) -> dict[str, Any]:
-        return json.loads(self.roe_json)
+        data: dict[str, Any] = json.loads(self.roe_json)
+        return data
 
 
 class AuditRecord(Base):

@@ -116,13 +116,21 @@ class RagStore:
 
     @classmethod
     def default(cls) -> RagStore:
-        """Chroma backend if available/configured, else the keyword retriever."""
-        try:
-            from rag.chroma_backend import build_chroma_retriever
+        """Keyword retriever by default; Chroma only when explicitly opted in (RAG_BACKEND).
 
-            retriever = build_chroma_retriever()
-            if retriever is not None:
-                return cls(retriever)
-        except Exception:  # any Chroma issue -> deterministic fallback
-            pass
+        Keeping keyword as the default makes retrieval deterministic and dependency-free
+        everywhere (tests, CI, laptop). The full stack sets ``RAG_BACKEND=chroma`` for
+        semantic recall; if Chroma can't initialize it falls back gracefully.
+        """
+        from core.config import settings
+
+        if settings.rag_backend.lower() == "chroma":
+            try:
+                from rag.chroma_backend import build_chroma_retriever
+
+                retriever = build_chroma_retriever()
+                if retriever is not None:
+                    return cls(retriever)
+            except Exception:  # any Chroma issue -> deterministic fallback
+                pass
         return cls(KeywordRetriever())

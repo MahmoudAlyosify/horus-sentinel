@@ -5,6 +5,7 @@ HTML path on the job so the UI/API can serve it. The chain-of-custody appendix (
 section 9) makes the report defensible: what ran, when, under what authorization, and who
 validated it.
 """
+
 from __future__ import annotations
 
 import structlog

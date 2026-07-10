@@ -1,4 +1,6 @@
-"""Orchestration — pure-Python Orchestrator + the LangGraph StateGraph definition."""
-from workflows.orchestrator import Orchestrator, RunSummary, orchestrator
+"""Orchestration — pure-Python Orchestrator, LangGraph StateGraph, queue + worker."""
 
-__all__ = ["Orchestrator", "RunSummary", "orchestrator"]
+from workflows.orchestrator import Orchestrator, RunSummary, orchestrator
+from workflows.worker import Worker, enqueue_job
+
+__all__ = ["Orchestrator", "RunSummary", "Worker", "enqueue_job", "orchestrator"]

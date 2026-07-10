@@ -7,6 +7,7 @@ as such. This is the "watch it refuse a disallowed source — that's by design" 
 
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -83,6 +84,26 @@ class JobService:
             if job is None:
                 raise KeyError(job_id)
             job.report_path = path
+
+    def completed_stages(self, job_id: str) -> list[str]:
+        """The pipeline stages already finished for this job (the resume checkpoint)."""
+        with session_scope() as session:
+            job = session.get(JobRecord, job_id)
+            if job is None:
+                raise KeyError(job_id)
+            stages: list[str] = json.loads(job.checkpoint_json or "[]")
+            return stages
+
+    def mark_stage_complete(self, job_id: str, stage: str) -> None:
+        """Record that a pipeline stage finished, so a resumed run can skip it."""
+        with session_scope() as session:
+            job = session.get(JobRecord, job_id)
+            if job is None:
+                raise KeyError(job_id)
+            stages: list[str] = json.loads(job.checkpoint_json or "[]")
+            if stage not in stages:
+                stages.append(stage)
+                job.checkpoint_json = json.dumps(stages)
 
     def record_validation(
         self, job_id: str, action: str, analyst: str, note: str | None = None

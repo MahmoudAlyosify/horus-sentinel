@@ -37,7 +37,9 @@ def _load_corpus() -> list[dict[str, Any]]:
         try:
             if candidate.exists():
                 data = json.loads(candidate.read_text(encoding="utf-8"))
-                records = data.get("records", data) if isinstance(data, dict) else data
+                records: list[dict[str, Any]] = (
+                    data.get("records", data) if isinstance(data, dict) else data
+                )
                 log.info("geo_corpus_loaded", path=str(candidate), records=len(records))
                 return records
         except (OSError, ValueError) as exc:
