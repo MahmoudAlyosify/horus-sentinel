@@ -75,8 +75,18 @@ class RunResponse(BaseModel):
     status: str
     entity_count: int = 0
     agents_run: list[str] = Field(default_factory=list)
+    skipped_stages: list[str] = Field(default_factory=list)
     critical_cve_hits: int = 0
     errors: list[str] = Field(default_factory=list)
+
+
+class EnqueueResponse(BaseModel):
+    """Result of queuing a job for asynchronous worker processing (Phase 5.2)."""
+
+    job_id: str
+    queued: bool = True
+    queue_backend: str
+    message: str = "Job queued for asynchronous processing."
 
 
 class DemoResponse(BaseModel):

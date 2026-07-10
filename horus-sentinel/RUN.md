@@ -63,10 +63,14 @@ docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
 #     docker cp ./Horus-OSINT.gguf deploy-ollama-1:/root/
 #     docker exec -it deploy-ollama-1 sh -c 'printf "FROM /root/Horus-OSINT.gguf\n" > /root/Modelfile && ollama create horus-osint -f /root/Modelfile'
 
-# 2c. (Optional) drop the real GTD/GDELT corpus in so the Geo-Event agent uses it:
+# 2c. Async workers are included: the compose file runs a `worker` service (QUEUE_BACKEND=redis)
+#     that pulls queued jobs and runs them resumably. Scale them:  docker compose up -d --scale worker=3
+#     Submit async:  POST /jobs  ->  POST /jobs/{id}/enqueue   (a worker picks it up)
+
+# 2d. (Optional) drop the real GTD/GDELT corpus in so the Geo-Event agent uses it:
 #     copy your file to  ./data/geo_corpus.json   (the sample is used until you do)
 
-# 2d. Verify
+# 2e. Verify
 curl http://localhost:8000/health
 #   → open http://localhost:8000/ui and run an assessment; the brain now narrates via Ollama
 ```

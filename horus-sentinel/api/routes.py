@@ -11,6 +11,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 
 from api.dto import (
+    EnqueueResponse,
     JobCreatedResponse,
     JobCreateRequest,
     JobResponse,
@@ -19,10 +20,12 @@ from api.dto import (
     ValidationResponse,
 )
 from core.analysis_store import load_analysis
+from core.config import settings
 from core.jobs import job_service
 from schemas.auth import AuthorizationError
 from schemas.state import JobStatus
 from workflows.orchestrator import orchestrator
+from workflows.worker import enqueue_job
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -73,9 +76,23 @@ async def run_job(job_id: str) -> RunResponse:
         status=summary.status,
         entity_count=summary.entity_count,
         agents_run=summary.agents_run,
+        skipped_stages=summary.skipped_stages,
         critical_cve_hits=summary.critical_cve_hits,
         errors=summary.errors,
     )
+
+
+@router.post(
+    "/{job_id}/enqueue", response_model=EnqueueResponse, status_code=status.HTTP_202_ACCEPTED
+)
+async def enqueue(job_id: str) -> EnqueueResponse:
+    """Queue a job for asynchronous processing by a worker (Phase 5.2)."""
+    if job_service.get_job(job_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found."
+        )
+    await enqueue_job(job_id)
+    return EnqueueResponse(job_id=job_id, queue_backend=settings.queue_backend)
 
 
 @router.get("/{job_id}/report")

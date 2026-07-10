@@ -24,9 +24,21 @@ _UI_DIR = Path(__file__).resolve().parent.parent / "horus-ui"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Create tables on startup so the platform runs with zero manual DB setup."""
+    """Create tables on startup; optionally run an in-process worker (WORKER_ENABLED)."""
+    import asyncio
+
     init_db()
-    yield
+    worker_task: asyncio.Task[None] | None = None
+    if settings.worker_enabled:
+        from workflows.worker import Worker
+
+        worker = Worker()
+        worker_task = asyncio.create_task(worker.run_forever())
+    try:
+        yield
+    finally:
+        if worker_task is not None:
+            worker_task.cancel()
 
 
 app = FastAPI(

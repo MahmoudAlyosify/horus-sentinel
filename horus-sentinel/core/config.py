@@ -29,6 +29,12 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
+    # Job queue + workers (Phase 5.2). "memory" (default, in-process) or "redis" (full stack).
+    queue_backend: str = "memory"
+    queue_name: str = "horus:jobs"
+    worker_enabled: bool = False  # start an in-process worker on API startup
+    worker_poll_timeout: float = 5.0  # seconds a worker blocks waiting for a job
+
     chroma_host: str = "localhost"
     chroma_port: int = 8001
 
