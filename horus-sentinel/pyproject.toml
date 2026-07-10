@@ -25,6 +25,11 @@ files = ["core", "tools", "schemas"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --cov=. --cov-report=term-missing"
+filterwarnings = [
+    # Internal timestamps are naive-UTC by design and consistent everywhere; silence the
+    # stdlib utcnow() deprecation so the suite output stays readable.
+    "ignore:datetime.datetime.utcnow.*:DeprecationWarning",
+]
 
 [tool.bandit]
 exclude_dirs = ["tests", "horus-geointel"]

@@ -1,19 +1,43 @@
 """HORUS Sentinel — API entry point.
 
-Day-1 skeleton: a health endpoint that confirms the app runs.
-Job submission (POST /jobs) arrives in Phase 1.
+Exposes the Control Plane: a health probe plus job submission/retrieval. Submitting a
+job runs it through the Authorization Engine first (a disallowed request is refused with
+a 403), then persists it. Collection and reasoning are driven by the orchestrator.
 """
+
 from __future__ import annotations
 
-from fastapi import FastAPI
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from pathlib import Path
 
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+
+from api.demo import router as demo_router
+from api.routes import router as jobs_router
 from core.config import settings
+from core.db import init_db
+
+_UI_DIR = Path(__file__).resolve().parent.parent / "horus-ui"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Create tables on startup so the platform runs with zero manual DB setup."""
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="HORUS Sentinel",
     description="Autonomous multi-agent OSINT & threat-intelligence platform.",
     version="0.1.0",
+    lifespan=lifespan,
 )
+
+app.include_router(jobs_router)
+app.include_router(demo_router)
 
 
 @app.get("/health", tags=["system"])
@@ -29,8 +53,13 @@ async def health() -> dict[str, str]:
 
 @app.get("/", tags=["system"])
 async def root() -> dict[str, str]:
-    """Root — points to the interactive docs."""
+    """Root — points to the Command Center UI and the interactive docs."""
     return {
-        "message": "HORUS Sentinel API. See /docs for the interactive API.",
+        "message": "HORUS Sentinel API. Open /ui for the Command Center, /docs for the API.",
         "tagline": "ARGUS's hundred eyes gather; the Eye of HORUS judges.",
     }
+
+
+# Serve the self-contained Command Center (zero-build static UI) at /ui.
+if _UI_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=str(_UI_DIR), html=True), name="ui")

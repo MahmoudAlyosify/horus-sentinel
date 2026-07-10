@@ -60,28 +60,49 @@ REASONING    → HORUS Brain (self-hosted fine-tuned Llama-3) → risk scoring �
 
 ## Quick Start
 
+### Option A — Zero-setup MVP (no Docker, no services, runs anywhere)
+
+The platform is designed to run **with zero infrastructure**: it falls back to SQLite, an
+in-memory graph (networkx), a dependency-free keyword RAG retriever, and a deterministic
+grounded synthesis when the model isn't served. Perfect for a laptop demo.
+
 ```bash
-# 1. Clone
 git clone https://github.com/MahmoudAlyosify/horus-sentinel.git
 cd horus-sentinel
 
-# 2. Configure
-cp .env.example .env         # then fill in the values
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
 
-# 3. Bring up the stack (Postgres, Neo4j, Redis, ChromaDB, MinIO, Ollama)
+uvicorn api.main:app --reload
+#   → Command Center:  http://localhost:8000/ui
+#   → API docs:        http://localhost:8000/docs
+#   → One-click:       click "Run Guided Demo" (fully offline, real report)
+```
+
+### Option B — Full stack (self-hosted model + graph DB + vector DB)
+
+```bash
+cp .env.example .env                                  # fill in keys; set DATABASE_URL for Postgres
+
+# Bring up Postgres, Neo4j, Redis, ChromaDB, MinIO, Ollama
 docker compose -f deploy/docker-compose.yml up -d
 
-# 4. Load the fine-tuned model into Ollama (one-time)
+# Load the fine-tuned model into Ollama (one-time) — needs the GPU box
 docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
 #   (or copy your GGUF and: ollama create horus-osint -f Modelfile)
 
-# 5. Python environment
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
 
-# 6. Run the API
-uvicorn api.main:app --reload
-#   → http://localhost:8000/docs
+The same code path runs in both modes — the heavy services (Neo4j, ChromaDB, WeasyPrint,
+LangGraph, Ollama) are **optional accelerators** that activate when present and degrade
+gracefully when absent. Nothing needs to change to move from laptop to full stack.
+
+**Run the tests** (all pass offline, no network/services):
+
+```bash
+pytest            # ~80 tests, network mocked
+ruff check . && ruff format --check .
 ```
 
 ---
@@ -102,7 +123,7 @@ horus-sentinel/
 ├── workflows/        # LangGraph orchestration
 ├── reporting/        # Jinja2 → PDF/HTML/JSON renderers
 ├── schemas/          # Pydantic models (SentinelState, RoE, findings)
-├── horus-ui/         # React + Cytoscape Command Center
+├── horus-ui/         # self-contained Command Center (served at /ui, zero build)
 ├── deploy/           # docker-compose, IaC
 └── tests/
 ```

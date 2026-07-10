@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HORUS Sentinel — Command Center</title>
+<style>
+  :root{--bg:#070d18;--panel:#0f1a2e;--panel2:#0c1526;--ink:#e8eefb;--muted:#93a6c4;
+        --line:#1d2c47;--accent:#3aa0ff;--accent2:#7ee0c0;
+        --crit:#d7263d;--high:#f46036;--med:#f0c808;--low:#2e8b57;--info:#6c757d;}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#12223d,transparent),var(--bg);
+       color:var(--ink);font-family:-apple-system,Segoe UI,Roboto,Helvetica,sans-serif;min-height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#0d1a30,#0a1424)}
+  header .logo{font-size:22px;font-weight:800;letter-spacing:.5px}
+  header .logo small{color:var(--muted);font-weight:500;font-size:12px;display:block;letter-spacing:0}
+  .modes{margin-left:auto;display:flex;gap:8px}
+  .mode{padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);
+        color:var(--muted);cursor:pointer;font-size:14px}
+  .mode.active{color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px 26px;max-width:1500px;margin:0 auto}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h3{margin:0 0 12px;font-size:15px;color:#cfe0ff}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  input,select{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
+        border-radius:8px;color:var(--ink);font-size:14px}
+  button.btn{width:100%;margin-top:14px;padding:11px;border:0;border-radius:8px;font-weight:700;
+        cursor:pointer;font-size:14px}
+  .btn.primary{background:linear-gradient(135deg,#2f7ff0,#38c7b0);color:#04121f}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.demo{background:linear-gradient(135deg,#f0a500,#f46036);color:#1a0d00}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px}
+  .status{margin-top:12px;font-size:13px;color:var(--accent2);min-height:18px}
+  .metrics{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 14px;flex:1;min-width:90px}
+  .metric .v{font-size:22px;font-weight:800}.metric .l{font-size:11px;color:var(--muted)}
+  .band{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;color:#04121f}
+  .band.Critical{background:var(--crit);color:#fff}.band.High{background:var(--high)}
+  .band.Medium{background:var(--med)}.band.Low{background:var(--low);color:#fff}.band.Info{background:var(--info);color:#fff}
+  #graph{height:420px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-top:8px}
+  .finding{border-left:3px solid var(--line);padding:8px 12px;margin:8px 0;background:var(--panel2);border-radius:0 8px 8px 0;font-size:13px}
+  .finding.Critical{border-color:var(--crit)}.finding.High{border-color:var(--high)}
+  .finding.Medium{border-color:var(--med)}.finding.Low{border-color:var(--low)}
+  .prose{white-space:pre-wrap;font-size:13px;color:#dbe6f7;line-height:1.55}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted)}
+  code{color:var(--accent2)}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:13px}
+  .tab.active{color:var(--ink);border-color:var(--accent)}
+  .hidden{display:none}
+  .chat{height:360px;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px}
+  .bubble{margin:8px 0;padding:10px 12px;border-radius:10px;max-width:85%}
+  .bubble.user{background:#173154;margin-left:auto}.bubble.horus{background:#12233c;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🦅 HORUS SENTINEL <small>Command Center · ARGUS eyes gather · the Eye of HORUS judges</small></div>
+  <div class="modes">
+    <div class="mode active" data-mode="recon" onclick="switchMode('recon')">OSINT-Recon</div>
+    <div class="mode" data-mode="geo" onclick="switchMode('geo')">Geo-Intel</div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: control panel -->
+  <div class="card" id="panel-left">
+    <div id="recon-controls">
+      <h3>New Assessment</h3>
+      <label>Subject type</label>
+      <select id="subjType" onchange="onTypeChange()">
+        <option value="domain">Domain (owned / public)</option>
+        <option value="region">Region + timeframe</option>
+      </select>
+      <label>Subject</label>
+      <input id="subjValue" placeholder="example.com or Sinai" value="example.com">
+      <div id="regionFields" class="row hidden">
+        <div><label>Year from</label><input id="yearFrom" value="2018"></div>
+        <div><label>Year to</label><input id="yearTo" value="2019"></div>
+      </div>
+      <label>Analyst (RoE signer)</label>
+      <input id="analyst" value="analyst_mahmoud">
+      <button class="btn ghost" onclick="genRoE()">① Generate demo RoE</button>
+      <button class="btn primary" onclick="runAssessment()">② Run assessment</button>
+      <div class="status" id="status"></div>
+      <hr style="border-color:var(--line);margin:16px 0">
+      <button class="btn demo" onclick="guidedDemo()">▶ Run Guided Demo (zero setup)</button>
+      <div class="hint">Pre-authorized safe subject (Sinai region), fully offline. One click → full report.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: results -->
+  <div class="card" id="panel-right">
+    <!-- RECON RESULTS -->
+    <div id="recon-view">
+      <div class="tabs">
+        <div class="tab active" data-tab="report" onclick="switchTab('report')">Report</div>
+        <div class="tab" data-tab="graph" onclick="switchTab('graph')">Knowledge Graph</div>
+        <div class="tab" data-tab="custody" onclick="switchTab('custody')">Chain of Custody</div>
+      </div>
+
+      <div id="tab-report">
+        <div id="empty" class="muted">Submit a subject or run the Guided Demo to see the intelligence report.</div>
+        <div id="report" class="hidden"></div>
+      </div>
+
+      <div id="tab-graph" class="hidden">
+        <div class="muted" id="graphMeta">The risk-colored intelligence graph appears here after a run.</div>
+        <div id="graph"></div>
+      </div>
+
+      <div id="tab-custody" class="hidden">
+        <div class="muted" id="custodyMeta">Every external touch, in order — the chain of custody.</div>
+        <table id="custodyTable"></table>
+      </div>
+    </div>
+
+    <!-- GEO-INTEL (preserved chat mode) -->
+    <div id="geo-view" class="hidden">
+      <h3>Geo-Intel — HORUS reasoning (preserved mode)</h3>
+      <div class="chat" id="chat">
+        <div class="bubble horus">I am HORUS. Ask me about a region + timeframe (e.g. "Sinai 2018"). In the full stack I am the fine-tuned Llama-3 served locally via Ollama.</div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input id="geoInput" placeholder="Assess Sinai 2018–2019">
+        <button class="btn primary" style="max-width:120px;margin:0" onclick="geoAsk()">Send</button>
+      </div>
+      <div class="hint">This view maps to the existing Horus-OSINT chat. Wired to <code>/demo</code> here for a live, offline sample.</div>
+    </div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script>
+const API = ""; // same origin
+let currentRoE = null, cy = null, lastGraph = null;
+
+function switchMode(m){
+  document.querySelectorAll('.mode').forEach(e=>e.classList.toggle('active', e.dataset.mode===m));
+  document.getElementById('recon-view').classList.toggle('hidden', m!=='recon');
+  document.getElementById('geo-view').classList.toggle('hidden', m!=='geo');
+  document.getElementById('recon-controls').classList.toggle('hidden', m!=='recon');
+  document.getElementById('panel-left').classList.toggle('hidden', m!=='recon');
+}
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('active', e.dataset.tab===t));
+  document.getElementById('tab-report').classList.toggle('hidden', t!=='report');
+  document.getElementById('tab-graph').classList.toggle('hidden', t!=='graph');
+  document.getElementById('tab-custody').classList.toggle('hidden', t!=='custody');
+  if(t==='graph' && lastGraph) renderGraph(lastGraph);
+}
+function onTypeChange(){
+  const t=document.getElementById('subjType').value;
+  document.getElementById('regionFields').classList.toggle('hidden', t!=='region');
+  document.getElementById('subjValue').value = t==='region' ? 'Sinai' : 'example.com';
+}
+function setStatus(s){ document.getElementById('status').textContent = s; }
+
+function subjectPayload(){
+  const type=document.getElementById('subjType').value;
+  const value=document.getElementById('subjValue').value.trim();
+  const s={type,value};
+  if(type==='region'){ s.year_from=+document.getElementById('yearFrom').value; s.year_to=+document.getElementById('yearTo').value; }
+  return s;
+}
+function genRoE(){
+  const type=document.getElementById('subjType').value;
+  const value=document.getElementById('subjValue').value.trim();
+  const sources = type==='region' ? ['geo_events','threat_intel']
+                                   : ['public_records','web_infra','threat_intel'];
+  const exp=new Date(Date.now()+3600e3).toISOString();
+  currentRoE={subject:value,enabled_sources:sources,in_scope_domains:type==='domain'?[value]:[],
+              signed_by:document.getElementById('analyst').value,expires_at:exp};
+  setStatus('✓ Demo RoE generated — sources: '+sources.join(', '));
+}
+async function runAssessment(){
+  if(!currentRoE) genRoE();
+  setStatus('Creating job…');
+  try{
+    const cr=await fetch(API+'/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subject:subjectPayload(),roe:currentRoE})});
+    if(cr.status===403){ setStatus('⛔ Refused by authorization gate: '+(await cr.json()).detail); return; }
+    if(!cr.ok){ setStatus('Error: '+(await cr.text())); return; }
+    const {id}=await cr.json();
+    setStatus('Running collection + reasoning (job '+id.slice(0,8)+')…');
+    const rr=await fetch(API+'/jobs/'+id+'/run',{method:'POST'});
+    const rs=await rr.json();
+    setStatus('Validating…');
+    await fetch(API+'/jobs/'+id+'/validate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'validate',analyst:currentRoE.signed_by,note:'Validated via Command Center'})});
+    await loadReport(id);
+    setStatus('✓ Done — '+rs.entity_count+' entities, '+rs.agents_run.join('/'));
+  }catch(e){ setStatus('Error: '+e.message); }
+}
+async function guidedDemo(){
+  setStatus('Running Guided Demo…');
+  try{
+    const r=await fetch(API+'/demo',{method:'POST'});
+    const d=await r.json();
+    await loadReport(d.job_id);
+    setStatus('✓ Guided Demo complete — subject '+d.subject+', '+d.entity_count+' entities');
+  }catch(e){ setStatus('Error: '+e.message); }
+}
+async function loadReport(jobId){
+  const r=await fetch(API+'/jobs/'+jobId+'/report');
+  if(!r.ok){ setStatus('Report not ready'); return; }
+  const {report_card:card,graph}=await r.json();
+  lastGraph=graph;
+  renderReport(card);
+  renderCustody(await (await fetch(API+'/jobs/'+jobId)).json());
+  if(!document.getElementById('tab-graph').classList.contains('hidden')) renderGraph(graph);
+}
+function renderReport(card){
+  document.getElementById('empty').classList.add('hidden');
+  const el=document.getElementById('report'); el.classList.remove('hidden');
+  const f=(card.prioritized_findings||[]).map(p=>`
+    <div class="finding ${p.risk_band}"><b>${p.title}</b> <span class="band ${p.risk_band}">${p.risk_band}</span>
+    <span class="muted">(${p.risk_score.toFixed(1)})</span><br><span class="muted">${p.why_it_matters}</span><br>
+    ${p.framework?`Framework: <code>${p.framework.technique_id}</code> ${p.framework.technique_name}<br>`:''}
+    ➜ ${p.recommendation}</div>`).join('');
+  el.innerHTML=`
+    <div class="metrics">
+      <div class="metric"><div class="v">${card.entity_count}</div><div class="l">Entities</div></div>
+      <div class="metric"><div class="v"><span class="band ${card.top_band}">${card.top_band}</span></div><div class="l">Top band</div></div>
+      <div class="metric"><div class="v">${card.critical_cve_hits}</div><div class="l">Critical CVEs</div></div>
+      <div class="metric"><div class="v">${(card.prioritized_findings||[]).length}</div><div class="l">Findings</div></div>
+    </div>
+    <h3>Executive Summary</h3><p class="prose">${card.executive_summary||''}</p>
+    <p class="muted">Reasoning by <code>${card.generated_by}</code></p>
+    <h3>Threat Assessment</h3><p class="prose">${card.threat_assessment||''}</p>
+    <h3>Prioritized Findings</h3>${f||'<p class="muted">None.</p>'}`;
+}
+function renderCustody(job){
+  document.getElementById('custodyMeta').textContent =
+    'Job '+job.id.slice(0,8)+' · status '+job.status+' · '+job.audit_count+' audited touches'+
+    (job.validated_by?(' · validated by '+job.validated_by):'');
+}
+function renderGraph(graph){
+  document.getElementById('graphMeta').textContent=(graph.nodes||[]).length+' nodes · '+(graph.edges||[]).length+' edges · risk-colored';
+  if(!window.cytoscape){ document.getElementById('graph').innerHTML='<p class="muted" style="padding:16px">Cytoscape failed to load (offline?). Graph JSON is still in the report export.</p>'; return; }
+  cy=cytoscape({container:document.getElementById('graph'),
+    elements:{nodes:graph.nodes||[],edges:graph.edges||[]},
+    style:[{selector:'node',style:{'background-color':'data(color)','label':'data(label)','color':'#e8eefb','font-size':'8px','width':16,'height':16}},
+           {selector:'edge',style:{'width':1,'line-color':'#1d2c47','label':'data(label)','font-size':'6px','color':'#93a6c4','target-arrow-shape':'triangle','target-arrow-color':'#1d2c47','curve-style':'bezier'}}],
+    layout:{name:'cose',animate:false}});
+}
+async function geoAsk(){
+  const inp=document.getElementById('geoInput'); const q=inp.value.trim(); if(!q) return;
+  const chat=document.getElementById('chat');
+  chat.innerHTML+=`<div class="bubble user">${q}</div>`; inp.value='';
+  chat.innerHTML+=`<div class="bubble horus">Running a live offline assessment…</div>`;
+  const r=await fetch(API+'/demo',{method:'POST'}); const d=await r.json();
+  const rep=await (await fetch(API+'/jobs/'+d.job_id+'/report')).json();
+  chat.innerHTML+=`<div class="bubble horus"><b>${d.subject}</b> — ${rep.report_card.top_band} risk.<br>${rep.report_card.geopolitical_context||rep.report_card.executive_summary}</div>`;
+  chat.scrollTop=chat.scrollHeight;
+}
+onTypeChange();
+</script>
+</body>
+</html>

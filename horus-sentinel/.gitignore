@@ -37,6 +37,11 @@ data/raw/
 data/processed/
 *.jsonl
 
+# Generated / deployment-supplied data (keep the bundled *.sample.json in git)
+data/geo_corpus.json
+data/reports/
+data/chroma/
+
 # ---- Databases / local state ----
 *.db
 *.sqlite3
