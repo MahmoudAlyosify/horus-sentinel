@@ -111,7 +111,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    ports: ["11434:11434"]
+    ports: ["11435:11434"]   # remapped: native Ollama occupies 11434
     volumes: ["ollama_data:/root/.ollama"]
     # After first `up`, load your fine-tuned model (service-based, works on any OS):
     #   docker compose -f deploy/docker-compose.yml exec ollama ollama pull hf.co/mahmoudalyosify/Horus-OSINT

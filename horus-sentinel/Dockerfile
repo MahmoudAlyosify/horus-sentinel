@@ -1,12 +1,6 @@
 # HORUS Sentinel — API + Command Center image
 FROM python:3.12-slim
 
-# System libraries for WeasyPrint (PDF rendering). Optional but bundled so PDF works.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev libcairo2 \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Install Python deps first for layer caching.
