@@ -56,12 +56,15 @@ cp .env.example .env            # fill in any API keys you have (all optional)
 # 2a. Bring up Postgres, Neo4j, Redis, ChromaDB, MinIO, Ollama, and the API itself
 docker compose -f deploy/docker-compose.yml up -d --build
 
-# 2b. Load the fine-tuned model into Ollama (uses the GPU). One-time.
-#     Option 1 — pull the GGUF straight from Hugging Face:
-docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
-#     Option 2 — from a local GGUF + Modelfile:
-#     docker cp ./Horus-OSINT.gguf deploy-ollama-1:/root/
-#     docker exec -it deploy-ollama-1 sh -c 'printf "FROM /root/Horus-OSINT.gguf\n" > /root/Modelfile && ollama create horus-osint -f /root/Modelfile'
+# 2b. Load the fine-tuned model into Ollama (uses the GPU). One-time. Service-based (any OS):
+docker compose -f deploy/docker-compose.yml exec ollama ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+#     From a local GGUF + Modelfile:
+#     docker compose -f deploy/docker-compose.yml cp ./Horus-OSINT.gguf ollama:/root/
+#     docker compose -f deploy/docker-compose.yml exec ollama sh -c 'printf "FROM /root/Horus-OSINT.gguf\n" > /root/Modelfile && ollama create horus-osint -f /root/Modelfile'
+#
+#     WINDOWS + RTX (recommended, easiest GPU): install native Ollama for Windows, run
+#       ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+#     then set  OLLAMA_ENDPOINT=http://host.docker.internal:11434  in .env and re-run 2a.
 
 # 2c. Async workers are included: the compose file runs a `worker` service (QUEUE_BACKEND=redis)
 #     that pulls queued jobs and runs them resumably. Scale them:  docker compose up -d --scale worker=3
@@ -77,16 +80,24 @@ curl http://localhost:8000/health
 
 Confirm the model is served:
 ```bash
-docker exec -it deploy-ollama-1 ollama list        # horus-osint should appear
-curl http://localhost:11434/api/tags                # HTTP 200
+docker compose -f deploy/docker-compose.yml exec ollama ollama list   # horus-osint should appear
+curl http://localhost:11434/api/tags                # HTTP 200 (PowerShell: use curl.exe)
 ```
 
 ---
 
 ## 3. GPU note (Ollama + RTX Ada 5000)
+
+**Windows 11 (this box) — recommended:** install the **native Ollama for Windows** app
+(https://ollama.com/download). It uses the RTX directly with zero extra config. Then set
+`OLLAMA_ENDPOINT=http://host.docker.internal:11434` in `.env` so the containers reach it.
+This avoids WSL2 GPU‑passthrough setup entirely.
+
+**Docker‑GPU (Linux, or Windows with WSL2 GPU):**
 `ollama/ollama:latest` uses the GPU automatically when the NVIDIA Container Toolkit is
-installed. If containers can't see the GPU, install `nvidia-container-toolkit` and add to
-the `ollama` service in `deploy/docker-compose.yml`:
+installed. If containers can't see the GPU, install `nvidia-container-toolkit` (Linux) or
+enable WSL2 GPU in Docker Desktop (Windows), and add to the `ollama` service in
+`deploy/docker-compose.yml`:
 
 ```yaml
     deploy:

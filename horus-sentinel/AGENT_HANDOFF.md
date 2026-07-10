@@ -60,10 +60,27 @@ Active branch: **`develop`**.
 
 ## 2. Prerequisites
 
-- **Docker + Docker Compose v2** (for the full stack). This is the only hard requirement.
+- **Docker Desktop + Compose v2** (for the full stack). This is the only hard requirement.
 - **Python 3.12** (3.13 also works) — only needed for the no‑Docker path (§5) and tests.
 - Internet access for the first Docker build (downloads base images + Python wheels, ~1–2 GB).
 - A GPU (this box has an RTX Ada 5000) — only needed to *serve the fine‑tuned model* (§4).
+
+### 2.1 This machine is Windows 11 — read this
+
+- Use **Docker Desktop for Windows** with the **WSL2** backend. `docker compose` commands
+  work natively in **PowerShell**; the containers themselves run Linux inside WSL2, so the
+  Linux image/Dockerfile are correct as‑is. Nothing about the app is Windows‑specific.
+- **`curl` gotcha:** in PowerShell, `curl` is an alias for `Invoke-WebRequest` and does NOT
+  accept `-s`/`-X`. Use **`curl.exe`** for the verify commands below, or use
+  `Invoke-RestMethod` (examples given), or just use a browser for GET requests.
+- **`make` is not built into Windows.** The optional `Makefile` shortcuts require **Git
+  Bash** (or WSL). If you don’t have `make`, ignore it and use the explicit commands here —
+  they are complete on their own.
+- **Python venv activation (PowerShell):** `.venv\Scripts\Activate.ps1`
+  (if blocked: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).
+- **GPU for the model:** the simplest route on Windows is the **native Ollama for Windows**
+  app (installs the NVIDIA runtime, uses the RTX directly — no WSL GPU passthrough needed).
+  See §4, Option A.
 
 ---
 
@@ -80,34 +97,49 @@ neo4j, redis, chroma, minio, ollama. No `.env` is required — every value has a
 
 ### 3.1 Verify (must all pass)
 
+> On **Windows PowerShell** use `curl.exe` (not `curl`) for the commands below, or the
+> `Invoke-RestMethod` equivalents shown. On Git Bash / Linux, plain `curl` is fine.
+
 ```bash
 # a) All containers up (api + worker + datastores)
 docker compose -f deploy/docker-compose.yml ps
 
 # b) Health endpoint returns ok
-curl -s http://localhost:8000/health
+curl.exe -s http://localhost:8000/health
 #    expect: {"status":"ok","service":"horus-sentinel",...}
 
-# c) Command Center loads
-#    open http://localhost:8000/ui  in a browser
+# c) Command Center loads — open http://localhost:8000/ui in a browser
 #    -> click "Run Guided Demo" -> you get a report card + a risk-colored graph
 
 # d) Guided Demo via API (fully offline, deterministic)
-curl -s -X POST http://localhost:8000/demo
+curl.exe -s -X POST http://localhost:8000/demo
 #    expect JSON: {"subject":"Sinai","status":"completed","entity_count":>0, "report_url":"/jobs/<id>/report", ...}
 
-# e) Authorization gate refuses out-of-scope (this refusal is a FEATURE)
-curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"subject":{"type":"domain","value":"attacker.com"},
-       "roe":{"subject":"attacker.com","enabled_sources":["web_infra"],
-              "in_scope_domains":["example.com"],"signed_by":"a",
-              "expires_at":"2999-01-01T00:00:00"}}'
-#    expect: 403
+# e) Authorization gate refuses out-of-scope (this refusal is a FEATURE) -> expect 403
+curl.exe -s -o NUL -w "%{http_code}\n" -X POST http://localhost:8000/jobs ^
+  -H "Content-Type: application/json" ^
+  -d "{\"subject\":{\"type\":\"domain\",\"value\":\"attacker.com\"},\"roe\":{\"subject\":\"attacker.com\",\"enabled_sources\":[\"web_infra\"],\"in_scope_domains\":[\"example.com\"],\"signed_by\":\"a\",\"expires_at\":\"2999-01-01T00:00:00\"}}"
+```
+
+**PowerShell‑native equivalents** (b, c/d, e):
+
+```powershell
+Invoke-RestMethod http://localhost:8000/health
+Invoke-RestMethod -Method Post http://localhost:8000/demo        # -> status "completed"
+try { Invoke-RestMethod -Method Post http://localhost:8000/jobs -ContentType application/json `
+  -Body '{"subject":{"type":"domain","value":"attacker.com"},"roe":{"subject":"attacker.com","enabled_sources":["web_infra"],"in_scope_domains":["example.com"],"signed_by":"a","expires_at":"2999-01-01T00:00:00"}}' }
+catch { $_.Exception.Response.StatusCode.value__ }   # expect 403
 ```
 
 If (a)–(e) pass, **the application is running and portable.** You are essentially done —
 §4 (model) is an optional quality upgrade.
+
+### 3.1b Shortcuts (optional — if `make` is available)
+
+A `Makefile` wraps the common commands. `make help` lists them. Examples:
+`make up` (build + start stack), `make verify` (health + guided demo), `make logs`,
+`make ps`, `make model-pull`, `make down`. Local dev: `make deps`, `make run`, `make check`
+(lint + typecheck + tests). If `make` isn’t installed, use the explicit commands in this doc.
 
 ### 3.2 Logs / stop
 
@@ -132,23 +164,40 @@ Without this, the analysis narrative uses a deterministic *offline synthesis*. W
 fine‑tuned `Horus-OSINT` model narrates. Reports and the graph are identical in structure
 either way (the model never invents facts).
 
-```bash
-# Option 1 — pull the GGUF straight from Hugging Face into the Ollama container:
-docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+### Option A — Native Ollama for Windows (RECOMMENDED on this Windows + RTX box)
 
-# Option 2 — from a local GGUF + the provided Modelfile:
-docker cp ./Horus-OSINT.gguf deploy-ollama-1:/root/
-docker exec -it deploy-ollama-1 sh -c \
+Easiest GPU path on Windows 11 — no WSL passthrough needed.
+
+1. Install **Ollama for Windows** from https://ollama.com/download (it sets up the NVIDIA
+   runtime and serves on `http://localhost:11434`).
+2. Load the model (PowerShell):
+   ```powershell
+   ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+   # or from a local file:  ollama create horus-osint -f deploy\Modelfile.example
+   ollama list                      # should show horus-osint
+   ```
+3. Point the containers at the host’s Ollama. Create/edit `.env` in the project dir:
+   ```
+   OLLAMA_ENDPOINT=http://host.docker.internal:11434
+   ```
+   then `docker compose -f deploy/docker-compose.yml up -d` (recreates api/worker with the new endpoint).
+
+### Option B — Ollama inside Docker (cross‑platform; needs WSL2 GPU for acceleration)
+
+```bash
+# Pull the model into the compose ollama service (service-based; works on any OS):
+docker compose -f deploy/docker-compose.yml exec ollama ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+
+# From a local GGUF + the provided Modelfile:
+docker compose -f deploy/docker-compose.yml cp ./Horus-OSINT.gguf ollama:/root/
+docker compose -f deploy/docker-compose.yml exec ollama sh -c \
   'printf "FROM /root/Horus-OSINT.gguf\n" > /root/Modelfile && ollama create horus-osint -f /root/Modelfile'
 
-# Verify the model is served:
-docker exec -it deploy-ollama-1 ollama list        # should list horus-osint
+docker compose -f deploy/docker-compose.yml exec ollama ollama list   # should list horus-osint
 ```
 
-> GPU note: `ollama/ollama:latest` uses the GPU automatically when the **NVIDIA Container
-> Toolkit** is installed on the host. If the container can’t see the GPU, install
-> `nvidia-container-toolkit`, then add this to the `ollama` service in
-> `deploy/docker-compose.yml` and `up -d` again:
+> For GPU **inside** the container on Windows, Docker Desktop must have WSL2 GPU support
+> (NVIDIA driver + WSL2). Then add to the `ollama` service in `deploy/docker-compose.yml`:
 > ```yaml
 >     deploy:
 >       resources:
@@ -158,6 +207,7 @@ docker exec -it deploy-ollama-1 ollama list        # should list horus-osint
 >               count: all
 >               capabilities: [gpu]
 > ```
+> If GPU passthrough is troublesome, prefer **Option A** (native Ollama).
 
 After loading the model, run a fresh assessment from `/ui`; the report’s `generated_by`
 field will show `horus-osint` instead of `offline-synthesis`.

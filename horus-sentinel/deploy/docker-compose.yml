@@ -1,6 +1,8 @@
 # HORUS SENTINEL — local development stack
 # Usage:  docker compose -f deploy/docker-compose.yml up -d
 #   The `api` service serves the API + Command Center (/ui) wired to every datastore.
+# Pinned project name -> deterministic container names (horus-sentinel-<service>-1) on any OS.
+name: horus-sentinel
 services:
 
   api:
@@ -27,7 +29,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CHROMA_HOST: chroma
       CHROMA_PORT: 8000
-      OLLAMA_ENDPOINT: http://ollama:11434
+      OLLAMA_ENDPOINT: ${OLLAMA_ENDPOINT:-http://ollama:11434}
       HORUS_MODEL_NAME: ${HORUS_MODEL_NAME:-horus-osint}
       GEO_CORPUS_PATH: /app/data/geo_corpus.json
       QUEUE_BACKEND: redis
@@ -57,7 +59,7 @@ services:
       NEO4J_USER: ${NEO4J_USER:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-horus_dev_pw}
       REDIS_URL: redis://redis:6379/0
-      OLLAMA_ENDPOINT: http://ollama:11434
+      OLLAMA_ENDPOINT: ${OLLAMA_ENDPOINT:-http://ollama:11434}
       HORUS_MODEL_NAME: ${HORUS_MODEL_NAME:-horus-osint}
       GEO_CORPUS_PATH: /app/data/geo_corpus.json
       QUEUE_BACKEND: redis
@@ -111,9 +113,10 @@ services:
     image: ollama/ollama:latest
     ports: ["11434:11434"]
     volumes: ["ollama_data:/root/.ollama"]
-    # After first `up`, load your fine-tuned model into this container:
-    #   docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
-    #   (or copy your GGUF + `ollama create horus-osint -f Modelfile`)
+    # After first `up`, load your fine-tuned model (service-based, works on any OS):
+    #   docker compose -f deploy/docker-compose.yml exec ollama ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+    # Windows GPU tip: it is often easiest to run the native Ollama app (RTX GPU, no WSL
+    # passthrough), then set OLLAMA_ENDPOINT=http://host.docker.internal:11434 in .env.
 
 volumes:
   postgres_data:
