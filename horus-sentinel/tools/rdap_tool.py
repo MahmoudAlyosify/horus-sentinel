@@ -105,7 +105,8 @@ def _vcard_name(entity: dict[str, Any]) -> str | None:
     try:
         for item in entity["vcardArray"][1]:
             if item[0] == "fn":
-                return item[3]
+                return str(item[3])
     except (KeyError, IndexError, TypeError):
         pass
-    return entity.get("handle")
+    handle: str | None = entity.get("handle")
+    return handle

@@ -50,10 +50,12 @@ class JobRecord(Base):
     )
 
     def subject(self) -> dict[str, Any]:
-        return json.loads(self.subject_json)
+        data: dict[str, Any] = json.loads(self.subject_json)
+        return data
 
     def roe(self) -> dict[str, Any]:
-        return json.loads(self.roe_json)
+        data: dict[str, Any] = json.loads(self.roe_json)
+        return data
 
 
 class AuditRecord(Base):

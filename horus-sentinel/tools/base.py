@@ -60,7 +60,7 @@ class IntelTool(ABC):
         key = self.cache_key(subject)
         cached = await cache.get(key)
         if cached is not None:
-            result = cached.model_copy(update={"cached": True})
+            result: ToolResult = cached.model_copy(update={"cached": True})
             await audit_log.record(self.name, self.source_category, subject, ctx, result)
             return result
 

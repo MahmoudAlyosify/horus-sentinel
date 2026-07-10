@@ -92,8 +92,11 @@ class HorusReasoningProvider:
             "stream": False,
             "options": {"temperature": settings.ollama_temperature},
         }
+        # Short connect timeout so an absent server falls back fast (good demo UX); a long
+        # read timeout so a real generation has time to finish.
+        timeout = httpx.Timeout(settings.ollama_timeout_s, connect=5.0)
         try:
-            async with httpx.AsyncClient(timeout=settings.ollama_timeout_s) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.post(self.endpoint, json=payload)
                 resp.raise_for_status()
                 return str(resp.json().get("response", "")).strip() or None
