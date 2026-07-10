@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     # RAG store (ATT&CK + geo corpus + findings). Persist dir for ChromaDB.
     chroma_persist_dir: str = "data/chroma"
     rag_top_k: int = 4
+    # Retrieval backend: "keyword" (deterministic, zero-dep, default) or "chroma"
+    # (semantic vector search — opt in on the full stack where ChromaDB is available).
+    rag_backend: str = "keyword"
 
     # Reporting output directory.
     report_output_dir: str = "data/reports"
