@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     horus_model_name: str = "horus-osint"
     llm_provider: str = "horus-selfhosted"
 
+    # Passive threat-intel / OSINT API keys (all optional — tools degrade gracefully).
+    shodan_api_key: str = ""
+    censys_api_id: str = ""
+    censys_api_secret: str = ""
+    virustotal_api_key: str = ""
+    otx_api_key: str = ""
+    abuseipdb_api_key: str = ""
+    hibp_api_key: str = ""
+
     # Reasoning knobs
     ollama_timeout_s: float = 120.0
     ollama_temperature: float = 0.2
@@ -50,6 +59,17 @@ class Settings(BaseSettings):
     w_threat_context: float = 0.30
     w_reputation: float = 0.20
     w_criticality: float = 0.20
+
+    # Geo-event corpus (GTD/GDELT-derived). Points at the real dataset on the full stack;
+    # falls back to the bundled sample so the Geo-Event agent runs out of the box.
+    geo_corpus_path: str = "data/geo_corpus.json"
+
+    # RAG store (ATT&CK + geo corpus + findings). Persist dir for ChromaDB.
+    chroma_persist_dir: str = "data/chroma"
+    rag_top_k: int = 4
+
+    # Reporting output directory.
+    report_output_dir: str = "data/reports"
 
     @property
     def postgres_dsn(self) -> str:

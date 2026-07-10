@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "description": "Sample geo-event corpus (GTD/GDELT-derived shape). Replace with the full 159,826-pair dataset on the deployment box; the Geo-Event agent reads whatever file GEO_CORPUS_PATH points at.",
+    "schema": "region-year records with instability indicators, dominant modalities, target categories, and actor references",
+    "source": "Global Terrorism Database (GTD) + GDELT — historical, to ~2020"
+  },
+  "records": [
+    {
+      "region": "Sinai",
+      "country_code": "EG",
+      "year": 2018,
+      "instability_index": 0.78,
+      "event_count": 214,
+      "dominant_modalities": ["armed_assault", "bombing_explosion", "ied"],
+      "primary_target_categories": ["military", "police", "government"],
+      "actor_references": ["ISIS-Sinai Province (Wilayat Sinai)"],
+      "threat_context_summary": "Sustained insurgent activity in North Sinai dominated by IED and armed-assault modalities against military and police targets; elevated instability with recurring coordinated attacks."
+    },
+    {
+      "region": "Sinai",
+      "country_code": "EG",
+      "year": 2019,
+      "instability_index": 0.64,
+      "event_count": 151,
+      "dominant_modalities": ["ied", "armed_assault"],
+      "primary_target_categories": ["military", "checkpoints"],
+      "actor_references": ["ISIS-Sinai Province (Wilayat Sinai)"],
+      "threat_context_summary": "Declining but persistent IED-centric threat against fixed military positions and checkpoints following counter-insurgency operations."
+    },
+    {
+      "region": "Cairo",
+      "country_code": "EG",
+      "year": 2019,
+      "instability_index": 0.31,
+      "event_count": 22,
+      "dominant_modalities": ["bombing_explosion", "assassination"],
+      "primary_target_categories": ["government", "civilians", "tourism"],
+      "actor_references": ["Hasm Movement", "Liwa al-Thawra"],
+      "threat_context_summary": "Low-frequency, high-visibility urban attacks targeting government and tourism, primarily attributed to small cell networks."
+    },
+    {
+      "region": "Levant",
+      "country_code": "SY",
+      "year": 2018,
+      "instability_index": 0.91,
+      "event_count": 1032,
+      "dominant_modalities": ["armed_assault", "bombing_explosion", "hostage_taking"],
+      "primary_target_categories": ["military", "civilians", "infrastructure"],
+      "actor_references": ["ISIS", "Hayat Tahrir al-Sham"],
+      "threat_context_summary": "Active multi-actor conflict zone with very high instability; broad target set spanning military, civilian and critical infrastructure."
+    },
+    {
+      "region": "Sahel",
+      "country_code": "ML",
+      "year": 2019,
+      "instability_index": 0.83,
+      "event_count": 468,
+      "dominant_modalities": ["armed_assault", "ied", "kidnapping"],
+      "primary_target_categories": ["military", "civilians", "ngo"],
+      "actor_references": ["JNIM", "ISGS"],
+      "threat_context_summary": "Expanding jihadist insurgency across the Mali-Niger-Burkina tri-border, with rising attacks on security forces and civilians."
+    }
+  ]
+}
