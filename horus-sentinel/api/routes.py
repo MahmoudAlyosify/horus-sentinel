@@ -6,11 +6,21 @@ refused with a 403 and a human-readable reason. That refusal is a feature, not a
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, status
 
-from api.dto import JobCreatedResponse, JobCreateRequest, JobResponse
+from api.dto import (
+    JobCreatedResponse,
+    JobCreateRequest,
+    JobResponse,
+    ValidationRequest,
+    ValidationResponse,
+)
+from core.analysis_store import load_analysis
 from core.jobs import job_service
 from schemas.auth import AuthorizationError
+from schemas.state import JobStatus
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -46,3 +56,39 @@ async def get_job(job_id: str) -> JobResponse:
 async def list_jobs(limit: int = 50) -> list[JobResponse]:
     """List recent jobs (most recent first)."""
     return [JobResponse(**v.__dict__) for v in job_service.list_jobs(limit=limit)]
+
+
+@router.get("/{job_id}/report")
+async def get_report(job_id: str) -> dict[str, Any]:
+    """Return the drafted Report Card + rendered graph for a job."""
+    if job_service.get_job(job_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found."
+        )
+    loaded = load_analysis(job_id)
+    if loaded is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Job {job_id} has no analysis yet — run the pipeline first.",
+        )
+    card, graph = loaded
+    return {"report_card": card.model_dump(mode="json"), "graph": graph}
+
+
+@router.post("/{job_id}/validate", response_model=ValidationResponse)
+async def validate_job(job_id: str, req: ValidationRequest) -> ValidationResponse:
+    """Record an analyst validation action — a report is FINAL only after 'validate'."""
+    if job_service.get_job(job_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found."
+        )
+    try:
+        new_status = job_service.record_validation(job_id, req.action, req.analyst, req.note)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return ValidationResponse(
+        job_id=job_id,
+        action=req.action,
+        new_status=str(new_status),
+        is_final=new_status == JobStatus.COMPLETED,
+    )

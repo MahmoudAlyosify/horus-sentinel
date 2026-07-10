@@ -1,0 +1,87 @@
+{
+  "_meta": {
+    "description": "Curated MITRE ATT&CK techniques for the defensive OSINT framing (master plan Part 3.4 / 4.1). Emphasis on TA0043 Reconnaissance and TA0042 Resource Development — 'here is what an adversary could learn about you from open sources'.",
+    "source": "MITRE ATT&CK Enterprise",
+    "framing": "defensive"
+  },
+  "techniques": [
+    {
+      "id": "T1595",
+      "name": "Active Scanning",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries scan victim infrastructure to gather information for targeting. Passive exposure: open services and versions visible in public internet-scan data (Shodan/Censys) reveal attack surface without the adversary ever touching your systems.",
+      "defensive_note": "Minimize the public service/version footprint; monitor what internet-scan datasets already expose about you."
+    },
+    {
+      "id": "T1590",
+      "name": "Gather Victim Network Information",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries gather network information such as IP ranges, DNS records and domain properties. DNS, WHOIS/RDAP and certificate-transparency logs disclose subdomains, name servers and resolved IPs from entirely public sources.",
+      "defensive_note": "Audit DNS/WHOIS/CT exposure; retire stale subdomains discoverable via certificate transparency."
+    },
+    {
+      "id": "T1592",
+      "name": "Gather Victim Host Information",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries gather host details — software, configurations and versions. HTTP response headers and fingerprints reveal web server, framework and CMS versions that map to known CVEs.",
+      "defensive_note": "Suppress version-disclosing headers; keep public-facing technology patched."
+    },
+    {
+      "id": "T1589",
+      "name": "Gather Victim Identity Information",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries gather identity data such as email addresses and employee names. Email-pattern inference and breach-corpus lookups expose valid address formats useful for phishing.",
+      "defensive_note": "Enforce MFA and phishing-resistant auth; monitor breach corpora for exposed corporate credentials."
+    },
+    {
+      "id": "T1593",
+      "name": "Search Open Websites/Domains",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries search freely available websites and domains for victim information, including social media and public code repositories.",
+      "defensive_note": "Govern what is published publicly; scan public repos for leaked secrets and internal references."
+    },
+    {
+      "id": "T1596",
+      "name": "Search Open Technical Databases",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Adversaries search public technical databases — DNS/WHOIS, certificate transparency, scan repositories and CDNs — for victim infrastructure.",
+      "defensive_note": "Treat CT logs, WHOIS and scan datasets as adversary intelligence sources; reduce what they reveal."
+    },
+    {
+      "id": "T1583",
+      "name": "Acquire Infrastructure",
+      "tactic": "TA0042",
+      "tactic_name": "Resource Development",
+      "text": "Adversaries acquire infrastructure — domains, servers, botnets — to stage operations. Look-alike domains and newly registered infrastructure signal pre-attack staging.",
+      "defensive_note": "Monitor for look-alike/typosquat domains and newly registered infrastructure referencing your brand."
+    },
+    {
+      "id": "T1584",
+      "name": "Compromise Infrastructure",
+      "tactic": "TA0042",
+      "tactic_name": "Resource Development",
+      "text": "Adversaries compromise third-party infrastructure to use during targeting. Poor-reputation IPs in your resolution chain or supply chain raise risk.",
+      "defensive_note": "Enrich resolved IPs with reputation feeds; alert on adjacency to known-malicious infrastructure."
+    }
+  ],
+  "geo_taxonomy": [
+    {
+      "id": "GEO-INSTABILITY",
+      "name": "Regional Instability Indicator",
+      "text": "Composite instability derived from historical event density (GTD/GDELT). High instability regions show sustained armed-assault and IED modalities against military, police and government targets.",
+      "framing": "geopolitical"
+    },
+    {
+      "id": "GEO-MODALITY",
+      "name": "Dominant Attack Modality",
+      "text": "The prevailing tactic in a region-year — e.g. IED, armed assault, bombing/explosion — indicating the most probable threat pattern for defensive posture.",
+      "framing": "geopolitical"
+    }
+  ]
+}

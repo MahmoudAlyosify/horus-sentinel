@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from schemas.roe import RoE
 from schemas.subject import Subject
@@ -47,3 +47,22 @@ class ErrorResponse(BaseModel):
 
     detail: str
     reason: str = "authorization_denied"
+
+
+class ValidationRequest(BaseModel):
+    """An analyst's validation action on a drafted report (master plan Part 4.5)."""
+
+    action: str = Field(..., description="validate | flag | edit")
+    analyst: str = Field(..., description="The analyst signing off.")
+    note: str | None = Field(
+        default=None, description="Optional note (required in spirit for flag/edit)."
+    )
+
+
+class ValidationResponse(BaseModel):
+    """Result of recording a validation action."""
+
+    job_id: str
+    action: str
+    new_status: str
+    is_final: bool

@@ -74,6 +74,31 @@ class AuditRecord(Base):
     job: Mapped[JobRecord] = relationship(back_populates="audit_entries")
 
 
+class AnalysisRecord(Base):
+    """The reasoning artifact for a job: the Report Card + rendered graph (Phase 4/5)."""
+
+    __tablename__ = "analysis"
+
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), primary_key=True)
+    report_card_json: Mapped[str] = mapped_column(Text)
+    graph_json: Mapped[str] = mapped_column(Text, default="{}")
+    generated_by: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class ValidationRecord(Base):
+    """The analyst's validation action — a report is not FINAL without one (Part 4.5)."""
+
+    __tablename__ = "validation"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), index=True)
+    action: Mapped[str] = mapped_column(String(16))  # validate | flag | edit
+    analyst: Mapped[str] = mapped_column(String(128))
+    note: Mapped[str | None] = mapped_column(Text, default=None)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 class FindingRecord(Base):
     """Persisted normalized finding (mirrors schemas.findings.Finding)."""
 

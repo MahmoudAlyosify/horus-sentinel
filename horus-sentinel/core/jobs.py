@@ -15,11 +15,16 @@ from typing import Any
 from sqlalchemy import func, select
 
 from core.authorization import authorization_engine
-from core.db import AuditRecord, FindingRecord, JobRecord, session_scope
+from core.db import AuditRecord, FindingRecord, JobRecord, ValidationRecord, session_scope
 from schemas.auth import AuthContext, AuthorizationError
 from schemas.roe import RoE
 from schemas.state import JobStatus
 from schemas.subject import Subject
+
+# Analyst validation actions (master plan Part 4.5).
+VALIDATE = "validate"
+FLAG = "flag"
+EDIT = "edit"
 
 
 @dataclass
@@ -71,6 +76,30 @@ class JobService:
             job.status = status.value
             if error is not None:
                 job.error = error
+
+    def record_validation(
+        self, job_id: str, action: str, analyst: str, note: str | None = None
+    ) -> JobStatus:
+        """Record an analyst action. A report is FINAL (COMPLETED) only after 'validate'.
+
+        This is the human-in-the-loop control (master plan Part 4.5): the model drafts, the
+        analyst is authoritative. Returns the job's new status.
+        """
+        if action not in (VALIDATE, FLAG, EDIT):
+            raise ValueError(f"Unknown validation action '{action}'.")
+        with session_scope() as session:
+            job = session.get(JobRecord, job_id)
+            if job is None:
+                raise KeyError(job_id)
+            session.add(ValidationRecord(job_id=job_id, action=action, analyst=analyst, note=note))
+            if action == VALIDATE:
+                job.validated_by = analyst
+                job.status = JobStatus.COMPLETED.value
+            elif action == FLAG:
+                job.status = JobStatus.REJECTED.value
+            else:  # edit — still needs a validate before it can be final
+                job.status = JobStatus.AWAITING_VALIDATION.value
+            return JobStatus(job.status)
 
     def get_job(self, job_id: str) -> JobView | None:
         with session_scope() as session:
