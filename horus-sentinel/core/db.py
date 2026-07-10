@@ -104,8 +104,10 @@ class FindingRecord(Base):
 
     __tablename__ = "findings"
 
+    # Composite PK: the same cached finding can belong to more than one job (the tool cache
+    # is shared for politeness/cost), so identity is (job_id, finding id), not id alone.
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), index=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), primary_key=True, index=True)
     entity_kind: Mapped[str] = mapped_column(String(32), index=True)
     entity_value: Mapped[str] = mapped_column(String(512), index=True)
     attributes_json: Mapped[str] = mapped_column(Text, default="{}")

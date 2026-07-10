@@ -30,9 +30,16 @@ async def persist_findings(job_id: str, findings: Iterable[Finding]) -> int:
 def _persist(job_id: str, findings: list[Finding]) -> int:
     written = 0
     with session_scope() as session:
+        existing = {
+            row[0]
+            for row in session.query(FindingRecord.id)
+            .filter(FindingRecord.job_id == job_id)
+            .all()
+        }
         for f in findings:
-            if session.get(FindingRecord, f.id) is not None:
+            if f.id in existing:
                 continue
+            existing.add(f.id)
             session.add(
                 FindingRecord(
                     id=f.id,

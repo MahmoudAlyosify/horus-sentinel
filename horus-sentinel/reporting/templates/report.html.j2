@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HORUS Sentinel — Intelligence Report — {{ subject.value }}</title>
+<style>
+  :root { --bg:#0b1220; --panel:#111a2b; --ink:#e6edf7; --muted:#9fb0c9; --line:#20304d;
+          --crit:#d7263d; --high:#f46036; --med:#f0c808; --low:#2e8b57; --info:#6c757d; }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:-apple-system,Segoe UI,Roboto,sans-serif;
+         margin:0; padding:0 0 60px; line-height:1.5; }
+  header { background:linear-gradient(135deg,#0d1b30,#132844); border-bottom:2px solid var(--line);
+           padding:28px 40px; }
+  header h1 { margin:0; font-size:26px; letter-spacing:.5px; }
+  header .tag { color:var(--muted); font-size:13px; margin-top:6px; }
+  main { max-width:960px; margin:0 auto; padding:0 40px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+            padding:22px 26px; margin-top:22px; }
+  section h2 { margin:0 0 6px; font-size:18px; color:#cfe0ff; }
+  section h2 .num { color:var(--muted); font-weight:400; margin-right:8px; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  th,td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .band { display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700;
+          color:#0b1220; }
+  .band.Critical{background:var(--crit);color:#fff} .band.High{background:var(--high)}
+  .band.Medium{background:var(--med)} .band.Low{background:var(--low);color:#fff}
+  .band.Info{background:var(--info);color:#fff}
+  .metrics { display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; }
+  .metric { background:#0d1728; border:1px solid var(--line); border-radius:8px; padding:12px 16px; min-width:120px; }
+  .metric .v { font-size:24px; font-weight:800; } .metric .l { color:var(--muted); font-size:12px; }
+  .prose { white-space:pre-wrap; color:#dbe6f7; }
+  .muted { color:var(--muted); } code { color:#9ee6b8; }
+  .finding { border-left:3px solid var(--line); padding:8px 14px; margin:10px 0; background:#0d1728; border-radius:0 8px 8px 0; }
+  .finding.Critical{border-color:var(--crit)} .finding.High{border-color:var(--high)}
+  .finding.Medium{border-color:var(--med)} .finding.Low{border-color:var(--low)}
+  #graph { height:460px; background:#0d1728; border:1px solid var(--line); border-radius:8px; margin-top:12px; }
+  .foot { color:var(--muted); font-size:12px; text-align:center; margin-top:30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦅 HORUS SENTINEL — Intelligence Report</h1>
+  <div class="tag">Subject: <b>{{ subject.value }}</b> ({{ subject.type }}) ·
+       Job {{ job_id }} · Generated {{ generated_at }} ·
+       Status: {{ job_status }}{% if validated_by %} · Validated by {{ validated_by }}{% endif %}</div>
+</header>
+<main>
+
+  {% set card = report_card %}
+  <section>
+    <h2><span class="num">1.</span>Executive Summary</h2>
+    {% if card %}
+    <div class="metrics">
+      <div class="metric"><div class="v">{{ entity_count }}</div><div class="l">Entities correlated</div></div>
+      <div class="metric"><div class="v"><span class="band {{ card.top_band }}">{{ card.top_band }}</span></div><div class="l">Top risk band</div></div>
+      <div class="metric"><div class="v">{{ card.critical_cve_hits }}</div><div class="l">Critical-CVE exposures</div></div>
+      <div class="metric"><div class="v">{{ card.prioritized_findings|length }}</div><div class="l">Prioritized findings</div></div>
+    </div>
+    <p class="prose">{{ card.executive_summary }}</p>
+    <p class="muted">Reasoning by: <code>{{ card.generated_by }}</code></p>
+    {% else %}<p class="muted">No analysis has been generated for this job yet.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">2.</span>Subject &amp; Scope</h2>
+    <table>
+      <tr><th>Subject</th><td>{{ subject.value }} ({{ subject.type }})</td></tr>
+      <tr><th>Authorized by</th><td>{{ roe.signed_by }}</td></tr>
+      <tr><th>RoE expires</th><td>{{ roe.expires_at }}</td></tr>
+      <tr><th>Enabled sources</th><td>{% for s in roe.enabled_sources %}<code>{{ s }}</code> {% endfor %}</td></tr>
+      <tr><th>In-scope domains</th><td>{% for d in roe.in_scope_domains %}<code>{{ d }}</code> {% endfor %}</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">3.</span>Discovered Entities</h2>
+    <p class="muted">{{ entity_count }} entities · {% for k,v in kind_histogram.items() %}{{ v }} {{ k }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+    <table>
+      <tr><th>Kind</th><th>Value</th><th>Source</th><th>Collected</th></tr>
+      {% for e in entities[:60] %}
+      <tr><td>{{ e.kind }}</td><td><code>{{ e.value }}</code></td><td>{{ e.produced_by }}</td><td class="muted">{{ e.produced_at }}</td></tr>
+      {% endfor %}
+    </table>
+    {% if entities|length > 60 %}<p class="muted">… and {{ entities|length - 60 }} more (see JSON export).</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">4.</span>Context &amp; Exposure</h2>
+    {% if card %}<p class="prose">{{ card.geopolitical_context }}</p>{% endif %}
+    {% if card %}<p class="prose">{{ card.threat_assessment }}</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">5.</span>Threat-Intelligence Enrichment</h2>
+    {% if signature_hits %}
+    <p>Public services running technology with a known <b>critical</b> CVE:</p>
+    <table>
+      <tr><th>IP</th><th>Service</th><th>Technology</th><th>CVE</th><th>CVSS</th></tr>
+      {% for h in signature_hits %}
+      <tr><td><code>{{ h.ip }}</code></td><td>{{ h.service }}</td><td>{{ h.technology }}</td><td>{{ h.cve }}</td><td><b>{{ h.cvss }}</b></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">No critical-CVE exposures correlated on public services.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">6.</span>Intelligence Knowledge Graph</h2>
+    <p class="muted">{{ graph.nodes|length }} nodes · {{ graph.edges|length }} edges · risk-colored.</p>
+    <div id="graph"></div>
+    <script>window.__HORUS_GRAPH__ = {{ graph | tojson }};</script>
+  </section>
+
+  <section>
+    <h2><span class="num">7.</span>Risk Analysis</h2>
+    <table>
+      <tr><th>Entity</th><th>Kind</th><th>Score</th><th>Band</th></tr>
+      {% for r in risk_rows[:25] %}
+      <tr><td><code>{{ r.value }}</code></td><td>{{ r.kind }}</td><td>{{ "%.1f"|format(r.risk_score) }}</td>
+          <td><span class="band {{ r.risk_band }}">{{ r.risk_band }}</span></td></tr>
+      {% endfor %}
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">8.</span>Prioritized Findings &amp; Recommendations</h2>
+    {% if card and card.prioritized_findings %}
+      {% for f in card.prioritized_findings %}
+      <div class="finding {{ f.risk_band }}">
+        <div><b>{{ f.title }}</b> — <span class="band {{ f.risk_band }}">{{ f.risk_band }}</span>
+             <span class="muted">({{ "%.1f"|format(f.risk_score) }})</span></div>
+        <div class="muted">{{ f.why_it_matters }}</div>
+        {% if f.framework %}<div>Framework: <code>{{ f.framework.technique_id }}</code>
+             {{ f.framework.technique_name }}{% if f.framework.tactic %} · {{ f.framework.tactic }}{% endif %}</div>{% endif %}
+        <div>➜ Recommendation: {{ f.recommendation }}</div>
+        {% if f.evidence_ids %}<div class="muted">Evidence: {{ f.evidence_ids|length }} record(s)</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}<p class="muted">No prioritized findings.</p>{% endif %}
+    {% if card and card.band_adjustments %}
+      <p class="muted">Model band adjustments (bounded ±1, logged):</p>
+      {% for a in card.band_adjustments %}
+      <div class="finding">{{ a.entity_key }}: {{ a.from_band }} → {{ a.to_band }} — {{ a.reason }}</div>
+      {% endfor %}
+    {% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">9.</span>Appendix — Chain of Custody</h2>
+    <p class="muted">Every external touch, in order, with source attribution and time.</p>
+    <table>
+      <tr><th>Tool</th><th>Source</th><th>Subject</th><th>Summary</th><th>Cache</th><th>When</th></tr>
+      {% for a in audit %}
+      <tr><td>{{ a.tool }}</td><td>{{ a.source_category }}</td><td><code>{{ a.subject }}</code></td>
+          <td class="muted">{{ a.summary }}</td><td>{{ "hit" if a.cache_hit else "miss" }}</td>
+          <td class="muted">{{ a.recorded_at }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="margin-top:14px;">Authorization: signed by <b>{{ roe.signed_by }}</b>, expires {{ roe.expires_at }}.</p>
+    {% if validations %}
+    <p class="muted">Analyst validation record:</p>
+    <table>
+      <tr><th>Action</th><th>Analyst</th><th>Note</th><th>When</th></tr>
+      {% for v in validations %}
+      <tr><td>{{ v.action }}</td><td>{{ v.analyst }}</td><td class="muted">{{ v.note or "—" }}</td><td class="muted">{{ v.recorded_at }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">⚠ No analyst validation recorded — report is not final.</p>{% endif %}
+  </section>
+
+  <div class="foot">HORUS Sentinel · ARGUS's hundred eyes gather; the Eye of HORUS judges · passive · auditable · human-validated</div>
+</main>
+
+<!-- Interactive graph (HTML only; scripts are inert in the PDF render). -->
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script>
+  (function () {
+    var data = window.__HORUS_GRAPH__ || {nodes:[],edges:[]};
+    if (!window.cytoscape || !document.getElementById('graph')) return;
+    cytoscape({
+      container: document.getElementById('graph'),
+      elements: { nodes: data.nodes, edges: data.edges },
+      style: [
+        { selector: 'node', style: { 'background-color':'data(color)', 'label':'data(label)',
+          'color':'#e6edf7','font-size':'8px','width':16,'height':16 } },
+        { selector: 'edge', style: { 'width':1,'line-color':'#20304d','label':'data(label)',
+          'font-size':'6px','color':'#6c757d','target-arrow-shape':'triangle',
+          'target-arrow-color':'#20304d','curve-style':'bezier' } }
+      ],
+      layout: { name: 'cose', animate: false }
+    });
+  })();
+</script>
+</body>
+</html>

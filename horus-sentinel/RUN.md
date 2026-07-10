@@ -1,0 +1,123 @@
+# RUN — HORUS Sentinel on the GPU box (RTX Ada 5000)
+
+Everything is already built and committed. This is the **install + run** runbook for the
+work machine. Two paths: a **fast MVP** (no infra, verifies everything in minutes) and the
+**full stack** (self-hosted model + graph/vector DBs).
+
+> The code degrades gracefully: Neo4j, ChromaDB, WeasyPrint, LangGraph and Ollama are
+> **optional accelerators**. Absent → SQLite + networkx + keyword-RAG + offline synthesis.
+> Present → they light up automatically. You never edit code to switch.
+
+---
+
+## 0. Prerequisites
+- Python **3.12** (the code targets 3.12; 3.13 also works).
+- (Full stack only) Docker + Docker Compose, and the RTX Ada 5000 for Ollama.
+- Git.
+
+---
+
+## 1. Fast MVP — verify the whole system in ~3 minutes (no Docker, no keys)
+
+```bash
+git clone https://github.com/MahmoudAlyosify/horus-sentinel.git
+cd horus-sentinel/horus-sentinel          # the project lives in the nested folder
+
+python -m venv .venv
+# Windows PowerShell:  .venv\Scripts\Activate.ps1
+# Git Bash / Linux:    source .venv/bin/activate
+
+pip install -r requirements-dev.txt        # full deps (includes langgraph, chroma, weasyprint)
+#   Minimal alternative (no heavy deps, still fully runs the MVP):
+#   pip install fastapi "uvicorn[standard]" pydantic pydantic-settings python-dotenv \
+#       httpx tenacity structlog sqlalchemy dnspython jinja2 networkx pytest pytest-asyncio respx ruff
+
+# Run the tests (all pass offline, network mocked)
+pytest -q
+ruff check . && ruff format --check .
+
+# Launch the platform
+uvicorn api.main:app --reload
+```
+
+Open:
+- **Command Center** → http://localhost:8000/ui  → click **"Run Guided Demo"** (fully offline, real report + graph)
+- **API docs** → http://localhost:8000/docs
+- **Refusal demo** → try a job whose RoE enables `web_infra` for an out-of-scope domain → **403 by design**
+
+---
+
+## 2. Full stack — self-hosted fine-tuned model + graph/vector DBs
+
+```bash
+cd horus-sentinel/horus-sentinel
+cp .env.example .env            # fill in any API keys you have (all optional)
+
+# 2a. Bring up Postgres, Neo4j, Redis, ChromaDB, MinIO, Ollama, and the API itself
+docker compose -f deploy/docker-compose.yml up -d --build
+
+# 2b. Load the fine-tuned model into Ollama (uses the GPU). One-time.
+#     Option 1 — pull the GGUF straight from Hugging Face:
+docker exec -it deploy-ollama-1 ollama pull hf.co/mahmoudalyosify/Horus-OSINT
+#     Option 2 — from a local GGUF + Modelfile:
+#     docker cp ./Horus-OSINT.gguf deploy-ollama-1:/root/
+#     docker exec -it deploy-ollama-1 sh -c 'printf "FROM /root/Horus-OSINT.gguf\n" > /root/Modelfile && ollama create horus-osint -f /root/Modelfile'
+
+# 2c. (Optional) drop the real GTD/GDELT corpus in so the Geo-Event agent uses it:
+#     copy your file to  ./data/geo_corpus.json   (the sample is used until you do)
+
+# 2d. Verify
+curl http://localhost:8000/health
+#   → open http://localhost:8000/ui and run an assessment; the brain now narrates via Ollama
+```
+
+Confirm the model is served:
+```bash
+docker exec -it deploy-ollama-1 ollama list        # horus-osint should appear
+curl http://localhost:11434/api/tags                # HTTP 200
+```
+
+---
+
+## 3. GPU note (Ollama + RTX Ada 5000)
+`ollama/ollama:latest` uses the GPU automatically when the NVIDIA Container Toolkit is
+installed. If containers can't see the GPU, install `nvidia-container-toolkit` and add to
+the `ollama` service in `deploy/docker-compose.yml`:
+
+```yaml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+```
+
+Running Ollama **natively** on the host (not in Docker) also works — just set
+`OLLAMA_ENDPOINT=http://host.docker.internal:11434` for the API container, or run the API
+natively too.
+
+---
+
+## 4. Verify checklist (what "working" looks like)
+- [ ] `pytest` green (~80 tests).
+- [ ] `/ui` loads; **Run Guided Demo** produces a report card + risk-colored graph.
+- [ ] A `web_infra` job on an out-of-scope domain returns **403** (authorization gate).
+- [ ] Full stack: `/health` ok, Ollama lists `horus-osint`, a run shows `generated_by: horus-osint` (not `offline-synthesis`).
+- [ ] A report is only **COMPLETED** after an analyst **validate** action.
+
+---
+
+## 5. Troubleshooting
+| Symptom | Cause / fix |
+|---|---|
+| `generated_by: offline-synthesis` on full stack | Ollama not reachable or model not loaded — see step 2b. |
+| PDF not produced | WeasyPrint system libs missing. The Docker image bundles them; locally, install GTK/Pango or just use HTML/JSON (auto-skipped, non-fatal). |
+| Neo4j browser empty | The MVP graph is in-process; the Neo4j mirror is best-effort. Ensure the `neo4j` service is up and `NEO4J_*` env is set. |
+| `psycopg` connect error | Check `DATABASE_URL` and that Postgres is healthy (`docker compose ps`). |
+| Geo agent finds nothing | Region/timeframe not in the corpus. The sample covers Sinai/Levant/Sahel/Cairo 2018–2019; add rows to `data/geo_corpus.json`. |
+
+---
+
+*Built for authorized, defensive use. Passive · auditable · human-validated.*

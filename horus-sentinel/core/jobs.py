@@ -77,6 +77,13 @@ class JobService:
             if error is not None:
                 job.error = error
 
+    def set_report_path(self, job_id: str, path: str) -> None:
+        with session_scope() as session:
+            job = session.get(JobRecord, job_id)
+            if job is None:
+                raise KeyError(job_id)
+            job.report_path = path
+
     def record_validation(
         self, job_id: str, action: str, analyst: str, note: str | None = None
     ) -> JobStatus:

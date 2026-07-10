@@ -9,12 +9,17 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
+from api.demo import router as demo_router
 from api.routes import router as jobs_router
 from core.config import settings
 from core.db import init_db
+
+_UI_DIR = Path(__file__).resolve().parent.parent / "horus-ui"
 
 
 @asynccontextmanager
@@ -32,6 +37,7 @@ app = FastAPI(
 )
 
 app.include_router(jobs_router)
+app.include_router(demo_router)
 
 
 @app.get("/health", tags=["system"])
@@ -47,8 +53,13 @@ async def health() -> dict[str, str]:
 
 @app.get("/", tags=["system"])
 async def root() -> dict[str, str]:
-    """Root — points to the interactive docs."""
+    """Root — points to the Command Center UI and the interactive docs."""
     return {
-        "message": "HORUS Sentinel API. See /docs for the interactive API.",
+        "message": "HORUS Sentinel API. Open /ui for the Command Center, /docs for the API.",
         "tagline": "ARGUS's hundred eyes gather; the Eye of HORUS judges.",
     }
+
+
+# Serve the self-contained Command Center (zero-build static UI) at /ui.
+if _UI_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=str(_UI_DIR), html=True), name="ui")

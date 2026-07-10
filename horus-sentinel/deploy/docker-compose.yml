@@ -1,6 +1,39 @@
 # HORUS SENTINEL — local development stack
 # Usage:  docker compose -f deploy/docker-compose.yml up -d
+#   The `api` service serves the API + Command Center (/ui) wired to every datastore.
 services:
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_started
+      chroma:
+        condition: service_started
+      ollama:
+        condition: service_started
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-horus}:${POSTGRES_PASSWORD:-horus_dev_pw}@postgres:5432/${POSTGRES_DB:-horus_sentinel}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-horus_dev_pw}
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+      OLLAMA_ENDPOINT: http://ollama:11434
+      HORUS_MODEL_NAME: ${HORUS_MODEL_NAME:-horus-osint}
+      GEO_CORPUS_PATH: /app/data/geo_corpus.json
+    ports: ["8000:8000"]
+    volumes:
+      - ../data:/app/data          # drop the real geo corpus + reports here
+    restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine

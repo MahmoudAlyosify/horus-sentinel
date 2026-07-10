@@ -66,3 +66,26 @@ class ValidationResponse(BaseModel):
     action: str
     new_status: str
     is_final: bool
+
+
+class RunResponse(BaseModel):
+    """Summary of a pipeline run (collection + reasoning)."""
+
+    job_id: str
+    status: str
+    entity_count: int = 0
+    agents_run: list[str] = Field(default_factory=list)
+    critical_cve_hits: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class DemoResponse(BaseModel):
+    """Result of the one-click Guided Demo (Phase 6.6) — a full assessment, zero setup."""
+
+    job_id: str
+    subject: str
+    status: str
+    entity_count: int
+    critical_cve_hits: int
+    report_html: str | None = None
+    report_url: str

@@ -14,6 +14,7 @@ from api.dto import (
     JobCreatedResponse,
     JobCreateRequest,
     JobResponse,
+    RunResponse,
     ValidationRequest,
     ValidationResponse,
 )
@@ -21,6 +22,7 @@ from core.analysis_store import load_analysis
 from core.jobs import job_service
 from schemas.auth import AuthorizationError
 from schemas.state import JobStatus
+from workflows.orchestrator import orchestrator
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -56,6 +58,22 @@ async def get_job(job_id: str) -> JobResponse:
 async def list_jobs(limit: int = 50) -> list[JobResponse]:
     """List recent jobs (most recent first)."""
     return [JobResponse(**v.__dict__) for v in job_service.list_jobs(limit=limit)]
+
+
+@router.post("/{job_id}/run", response_model=RunResponse)
+async def run_job(job_id: str) -> RunResponse:
+    """Run collection + reasoning for a job. Stops at the human-validation checkpoint."""
+    if job_service.get_job(job_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found.")
+    summary = await orchestrator.run(job_id)
+    return RunResponse(
+        job_id=job_id,
+        status=summary.status,
+        entity_count=summary.entity_count,
+        agents_run=summary.agents_run,
+        critical_cve_hits=summary.critical_cve_hits,
+        errors=summary.errors,
+    )
 
 
 @router.get("/{job_id}/report")
