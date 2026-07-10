@@ -9,6 +9,7 @@ the reporting agent. Status is checkpointed to the DB at every stage — resumab
 Order (Part 2.3):  authorize → osint → {geo_event, web_infra} → threat_intel → analysis
                    → [human validation] → report
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +23,8 @@ from agents.osint_agent import OsintAgent
 from agents.report_agent import report_agent
 from agents.threat_intel_agent import ThreatIntelAgent
 from agents.web_infra_agent import WebInfraAgent
-from core.authorization import authorization_engine
 from core.analysis_store import save_analysis
+from core.authorization import authorization_engine
 from core.jobs import job_service
 from schemas.auth import AuthContext
 from schemas.roe import RoE, SourceCategory
@@ -127,11 +128,7 @@ class Orchestrator:
         job_service.set_status(job_id, JobStatus.REPORTING)
         paths = report_agent.generate(job_id, formats)
         view = job_service.get_job(job_id)
-        final = (
-            JobStatus.COMPLETED
-            if view and view.validated_by
-            else JobStatus.AWAITING_VALIDATION
-        )
+        final = JobStatus.COMPLETED if view and view.validated_by else JobStatus.AWAITING_VALIDATION
         job_service.set_status(job_id, final)
         return paths
 

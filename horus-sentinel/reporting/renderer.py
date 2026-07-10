@@ -5,6 +5,7 @@
 * PDF  — HTML→PDF via WeasyPrint when it's installed; otherwise skipped non-fatally so
          the platform still produces HTML+JSON on a bare setup.
 """
+
 from __future__ import annotations
 
 import json

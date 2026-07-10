@@ -64,7 +64,9 @@ async def list_jobs(limit: int = 50) -> list[JobResponse]:
 async def run_job(job_id: str) -> RunResponse:
     """Run collection + reasoning for a job. Stops at the human-validation checkpoint."""
     if job_service.get_job(job_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found."
+        )
     summary = await orchestrator.run(job_id)
     return RunResponse(
         job_id=job_id,

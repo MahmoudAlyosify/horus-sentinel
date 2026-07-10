@@ -10,6 +10,7 @@ long jobs resumable and every transition auditable.
 full stack, ``build_sentinel_graph()`` returns a compiled graph that runs end to end and can
 checkpoint to Postgres.
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -5,6 +5,7 @@ REGION subject served entirely from the local geo-event corpus, so the demo is f
 offline and deterministic — no network, no keys, no external calls. This is the moment a
 judge runs HORUS themselves and watches it work.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta

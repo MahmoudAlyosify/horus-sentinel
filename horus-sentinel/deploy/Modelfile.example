@@ -1,0 +1,19 @@
+# Ollama Modelfile for the fine-tuned HORUS-OSINT model.
+# Usage (on the GPU box, after copying your GGUF into the Ollama container/host):
+#   ollama create horus-osint -f Modelfile
+#
+# Then HORUS_MODEL_NAME=horus-osint (the default) picks it up.
+
+FROM ./Horus-OSINT.gguf
+
+# Match the fine-tuning chat template / stop tokens for Llama-3.
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9
+PARAMETER stop "<|eot_id|>"
+PARAMETER stop "<|end_of_text|>"
+
+# The model already produces a sectioned Intelligence Report Card; the provider prompts it
+# for EXECUTIVE SUMMARY / GEOPOLITICAL CONTEXT / THREAT ASSESSMENT / CONCLUSION.
+SYSTEM """You are HORUS, a defensive OSINT intelligence analyst. You reason over correlated,
+retrieved facts and produce concise, sectioned intelligence report cards. You never invent
+entities or figures; you synthesize and explain what the evidence shows."""

@@ -5,6 +5,7 @@ entities with source + timestamp, geo/infra context, enrichment, the risk-colore
 per-finding risk, prioritized recommendations, and the chain-of-custody appendix — into a
 single dict the renderers turn into HTML / PDF / JSON. Every claim keeps its evidence.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

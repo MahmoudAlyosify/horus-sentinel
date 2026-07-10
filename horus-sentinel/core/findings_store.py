@@ -32,9 +32,7 @@ def _persist(job_id: str, findings: list[Finding]) -> int:
     with session_scope() as session:
         existing = {
             row[0]
-            for row in session.query(FindingRecord.id)
-            .filter(FindingRecord.job_id == job_id)
-            .all()
+            for row in session.query(FindingRecord.id).filter(FindingRecord.job_id == job_id).all()
         }
         for f in findings:
             if f.id in existing:

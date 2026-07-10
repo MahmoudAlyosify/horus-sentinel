@@ -1,4 +1,5 @@
 """Guided Demo endpoint test — one click, full offline assessment (Phase 6.6 backend)."""
+
 import httpx
 import pytest
 import respx
