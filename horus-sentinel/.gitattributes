@@ -1,0 +1,22 @@
+# Normalize line endings so the repo behaves identically on Windows, macOS and Linux
+# (and inside Docker). Text files are stored with LF in git.
+* text=auto eol=lf
+
+# Explicitly LF for anything that runs in a container / shell.
+*.py     text eol=lf
+*.sh     text eol=lf
+*.j2     text eol=lf
+*.json   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.toml   text eol=lf
+*.md     text eol=lf
+Dockerfile text eol=lf
+
+# Binary assets — never touch.
+*.png    binary
+*.jpg    binary
+*.pdf    binary
+*.gguf   binary
+*.bin    binary
+*.safetensors binary
