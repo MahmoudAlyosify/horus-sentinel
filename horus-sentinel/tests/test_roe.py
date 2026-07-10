@@ -1,17 +1,18 @@
 """Tests for the Rules-of-Engagement model."""
+
 from datetime import datetime, timedelta
 
 from schemas.roe import RoE, SourceCategory
 
 
 def _sample_roe(**overrides) -> RoE:
-    base = dict(
-        subject="example.com",
-        enabled_sources=[SourceCategory.PUBLIC_RECORDS],
-        in_scope_domains=["example.com"],
-        signed_by="analyst_mahmoud",
-        expires_at=datetime.utcnow() + timedelta(hours=1),
-    )
+    base = {
+        "subject": "example.com",
+        "enabled_sources": [SourceCategory.PUBLIC_RECORDS],
+        "in_scope_domains": ["example.com"],
+        "signed_by": "analyst_mahmoud",
+        "expires_at": datetime.utcnow() + timedelta(hours=1),
+    }
     base.update(overrides)
     return RoE(**base)
 

@@ -1,0 +1,49 @@
+"""Request/response DTOs for the API surface."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
+
+from schemas.roe import RoE
+from schemas.subject import Subject
+
+
+class JobCreateRequest(BaseModel):
+    """Submit a new assessment: a subject + the RoE that authorizes it."""
+
+    subject: Subject
+    roe: RoE
+
+
+class JobResponse(BaseModel):
+    """A job's current state."""
+
+    id: str
+    status: str
+    subject: dict[str, Any]
+    roe: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+    report_path: str | None = None
+    validated_by: str | None = None
+    error: str | None = None
+    audit_count: int = 0
+    finding_count: int = 0
+
+
+class JobCreatedResponse(BaseModel):
+    """Returned when a job is accepted (authorized)."""
+
+    id: str
+    status: str
+    message: str = "Job authorized and queued."
+
+
+class ErrorResponse(BaseModel):
+    """A structured refusal — the authorization gate speaking."""
+
+    detail: str
+    reason: str = "authorization_denied"
