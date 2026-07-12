@@ -261,8 +261,11 @@ The GitHub Actions CI (`.github/workflows/ci.yml`) runs the same on every push.
 | `POST /jobs/{id}/run` | Run collection + reasoning synchronously (stops at validation) |
 | `POST /jobs/{id}/enqueue` | Queue the job for a worker (async, resumable) |
 | `GET /jobs/{id}/report` | The Report Card + Cytoscape graph JSON |
-| `POST /jobs/{id}/validate` | Analyst action `{action: validate\|flag\|edit, analyst, note}` — a report is FINAL only after `validate` |
+| `POST /jobs/{id}/validate` | Analyst action `{action: validate\|flag\|edit, analyst, note}` — a report is FINAL only after `validate`; a `validate` renders HTML+JSON+PDF |
+| `GET /jobs/{id}/download/{fmt}` | Download the rendered report — `pdf` (real Arabic RTL) \| `html` \| `json` (renders on demand) |
 | `POST /demo` | One‑click Guided Demo (offline, safe subject) → full report |
+| `GET /setup/status` | First-run status: brain backend, HF token validity, per-transport reachability |
+| `POST /setup/hf-token` | Save + validate the Hugging Face token `{token, backend?, model_id?, endpoint_url?}` (400 if rejected) |
 
 Subject shapes: `{"type":"domain","value":"example.com"}` or
 `{"type":"region","value":"Sinai","year_from":2018,"year_to":2019}`.

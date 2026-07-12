@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 import structlog
 
+from agents.active_recon_agent import ActiveReconAgent
 from agents.analysis_agent import analysis_agent
 from agents.geo_event_agent import GeoEventAgent
 from agents.osint_agent import OsintAgent
@@ -81,6 +82,12 @@ class Orchestrator:
         if subject.type == SubjectType.DOMAIN and roe.allows_source(SourceCategory.WEB_INFRA):
             stages.append(
                 ("web_infra", self._collector(WebInfraAgent(), subject, auth, summary, "web_infra"))
+            )
+        # active_recon (GATED): active scanning/enumeration/crawl, only when the RoE authorizes
+        # active ops on an in-scope target. Runs after osint so it inherits resolved IPs.
+        if subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION) and roe.has_active_sources():
+            stages.append(
+                ("active_recon", self._collector(ActiveReconAgent(), subject, auth, summary, "active_recon"))
             )
         # threat_intel converges last — it enriches whatever the eyes discovered.
         if roe.allows_source(SourceCategory.THREAT_INTEL):

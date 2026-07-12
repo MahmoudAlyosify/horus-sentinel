@@ -10,6 +10,26 @@ work machine. Two paths: a **fast MVP** (no infra, verifies everything in minute
 
 ---
 
+## NEW in this version — online brain, Arabic, real PDF
+
+- **The brain is pluggable** (`BRAIN_BACKEND`): `hybrid` (default — Hugging Face online, then
+  local Ollama), `hf_serverless`, `hf_endpoint`, or `ollama` (sovereign, nothing leaves the box).
+- **First-run setup asks for your Hugging Face token.** On first launch the Command Center shows
+  a setup modal; enter your HF token → it's validated against HF and saved to `.env`. Or run the
+  CLI wizard: `python -m core.setup_wizard`. Get a token at https://huggingface.co/settings/tokens
+  (read scope). Without a token the platform still runs (offline synthesis / local Ollama).
+- **Reports are Arabic (RTL) by default** (`REPORT_LANGUAGE=ar`; set `en` for English). The model
+  is prompted to write the narrative in Arabic; section anchors stay machine-stable.
+- **Real Arabic PDF** — produced by a pure-Python engine (fpdf2 + arabic-reshaper + python-bidi +
+  bundled Amiri font), so a correct RTL PDF is generated on **any OS with no system libraries**.
+  Download it from the UI ("⬇ تحميل تقرير PDF عربي") or `GET /jobs/{id}/download/pdf`.
+
+> **Data-sovereignty note (important for an intelligence user):** `hybrid`/`hf_*` send the
+> already-public grounded facts to Hugging Face's cloud. For a fully sovereign deployment set
+> `BRAIN_BACKEND=ollama` — the same report, nothing leaves your infrastructure.
+
+---
+
 ## 0. Prerequisites
 - Python **3.12** (the code targets 3.12; 3.13 also works).
 - (Full stack only) Docker + Docker Compose, and the RTX Ada 5000 for Ollama.
@@ -116,10 +136,14 @@ natively too.
 ---
 
 ## 4. Verify checklist (what "working" looks like)
-- [ ] `pytest` green (~80 tests).
-- [ ] `/ui` loads; **Run Guided Demo** produces a report card + risk-colored graph.
+- [ ] `pytest` green (~85 tests).
+- [ ] `/ui` loads in **Arabic (RTL)**; **العرض الإرشادي** produces a report card + risk-colored graph.
+- [ ] First run shows the **HF token setup modal**; entering a valid token flips the brain chip to
+      "أونلاين"; `GET /setup/status` shows `online_ready: true`.
 - [ ] A `web_infra` job on an out-of-scope domain returns **403** (authorization gate).
-- [ ] Full stack: `/health` ok, Ollama lists `horus-osint`, a run shows `generated_by: horus-osint` (not `offline-synthesis`).
+- [ ] `GET /jobs/{id}/download/pdf` returns a real **Arabic RTL PDF**.
+- [ ] Online brain: a run shows `generated_by: mahmoudalyosify/Horus-OSINT (HF ...)`;
+      local: `generated_by: horus-osint`; neither reachable: `offline-synthesis`.
 - [ ] A report is only **COMPLETED** after an analyst **validate** action.
 
 ---

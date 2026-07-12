@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from schemas.roe import Classification, RoE, SourceCategory
+from schemas.roe import ACTIVE_SOURCE_CATEGORIES, Classification, RoE, SourceCategory
 from schemas.subject import Subject, SubjectType
 
 
@@ -33,18 +33,14 @@ class AuthContext(BaseModel):
     ) -> None:
         """Hard gate. Raises ``AuthorizationError`` if the call is not permitted.
 
-        Enforces, in order: RoE validity, passive-only classification, source enablement,
-        and subject scope (owned-domain checks for web-facing collection).
+        Enforces, in order: RoE validity, source enablement, classification rules, and
+        subject scope. **Active reconnaissance is gated hardest**: it runs only when the RoE
+        explicitly authorizes active ops *and* the target is inside ``in_scope_domains``.
+        An active call against an out-of-scope target always raises — by design.
         """
         if not self.roe.is_valid_now():
             raise AuthorizationError(
                 f"RoE expired at {self.roe.expires_at.isoformat()}; job {self.job_id} cannot collect."
-            )
-
-        # Path C is passive-only. Anything else is a hard stop.
-        if classification != Classification.PASSIVE:
-            raise AuthorizationError(
-                f"Classification '{classification}' is not permitted — HORUS Sentinel is passive-only."
             )
 
         if not self.roe.allows_source(source_category):
@@ -52,17 +48,47 @@ class AuthContext(BaseModel):
                 f"Source category '{source_category.value}' is not enabled in the RoE for job {self.job_id}."
             )
 
+        if classification == Classification.ACTIVE:
+            self._assert_active_authorized(source_category, subject)
+
         self._assert_subject_in_scope(source_category, subject)
 
+    def _assert_active_authorized(
+        self, source_category: SourceCategory, subject: Subject
+    ) -> None:
+        """Active reconnaissance requires an explicit authorization flag + an in-scope target."""
+        if not self.roe.active_authorized:
+            raise AuthorizationError(
+                f"Active source '{source_category.value}' requires active_authorized=True in the "
+                f"RoE for job {self.job_id} — active reconnaissance is opt-in and audited."
+            )
+        # Active ops are only ever permitted against explicitly authorized assets.
+        if subject.type not in (SubjectType.DOMAIN, SubjectType.ORGANIZATION):
+            raise AuthorizationError(
+                f"Active reconnaissance is only permitted for domain/organization targets, "
+                f"not subject type '{subject.type.value}'."
+            )
+        if not self._target_in_scope(subject):
+            raise AuthorizationError(
+                f"Active target '{subject.value}' is not within in_scope_domains "
+                f"{sorted(self.roe.in_scope_domains)} — active recon never runs out of scope."
+            )
+
     def _assert_subject_in_scope(self, source_category: SourceCategory, subject: Subject) -> None:
-        """Web-facing collection is confined to owned/authorized domains."""
-        if source_category != SourceCategory.WEB_INFRA:
+        """Web-facing collection (passive web-infra + all active recon) stays on owned assets."""
+        scoped = {SourceCategory.WEB_INFRA, *ACTIVE_SOURCE_CATEGORIES}
+        if source_category not in scoped:
             return
-        if subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION):
-            target = subject.value.lower()
-            allowed = {d.lower() for d in self.roe.in_scope_domains}
-            in_scope = any(target == d or target.endswith(f".{d}") for d in allowed)
-            if not in_scope:
-                raise AuthorizationError(
-                    f"Subject '{subject.value}' is not within in_scope_domains for web-infra collection."
-                )
+        if subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION) and not self._target_in_scope(
+            subject
+        ):
+            raise AuthorizationError(
+                f"Subject '{subject.value}' is not within in_scope_domains for "
+                f"'{source_category.value}' collection."
+            )
+
+    def _target_in_scope(self, subject: Subject) -> bool:
+        """True if the subject is one of, or a subdomain of, an in-scope domain."""
+        target = subject.value.lower()
+        allowed = {d.lower() for d in self.roe.in_scope_domains}
+        return any(target == d or target.endswith(f".{d}") for d in allowed)

@@ -21,7 +21,11 @@ import networkx as nx
 from schemas.findings import EntityKind, Finding
 
 # Edge labels that indicate public/infra exposure, used by the exposure sub-score.
-_INFRA_EDGES = {"HAS_SUBDOMAIN", "RESOLVES_TO", "EXPOSES", "RUNS", "USES_NAMESERVER"}
+# Includes the active-recon edges (open ports, discovered endpoints, service identification).
+_INFRA_EDGES = {
+    "HAS_SUBDOMAIN", "RESOLVES_TO", "EXPOSES", "RUNS", "USES_NAMESERVER",
+    "HAS_OPEN_PORT", "HAS_ENDPOINT", "IDENTIFIED_AS",
+}
 
 _DOMAINISH = re.compile(r"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 

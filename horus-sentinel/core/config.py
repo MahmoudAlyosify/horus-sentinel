@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +49,24 @@ class Settings(BaseSettings):
     horus_model_name: str = "horus-osint"
     llm_provider: str = "horus-selfhosted"
 
+    # Brain backend selection (Part 4.3 — the provider bridge, now pluggable).
+    #   "hybrid"        → try HF online first, fall back to local Ollama (recommended).
+    #   "hf_serverless" → HF Inference router (serverless) only.
+    #   "hf_endpoint"   → a dedicated HF Inference Endpoint URL only.
+    #   "ollama"        → self-hosted Ollama only (data never leaves the box).
+    brain_backend: str = "hybrid"
+
+    # Hugging Face online inference. The token is prompted on first run and saved to .env.
+    hf_token: str = ""
+    hf_model_id: str = "mahmoudalyosify/Horus-OSINT"
+    # A dedicated Inference Endpoint URL (used when brain_backend includes hf_endpoint).
+    hf_endpoint_url: str = ""
+    hf_timeout_s: float = 120.0
+    hf_max_new_tokens: int = 512
+
+    # Report / narrative language. "ar" = Arabic (RTL), "en" = English.
+    report_language: str = "ar"
+
     # Passive threat-intel / OSINT API keys (all optional — tools degrade gracefully).
     shodan_api_key: str = ""
     censys_api_id: str = ""
@@ -80,6 +100,27 @@ class Settings(BaseSettings):
     # Reporting output directory.
     report_output_dir: str = "data/reports"
 
+    # ---- Active reconnaissance (authorized targets only) ----
+    # These tools send traffic to the target and only ever run against in-scope, explicitly
+    # authorized assets (enforced by the Authorization Engine). The knobs keep them polite.
+    active_scan_ports: str = (  # comma-separated common ports for the TCP connect scan
+        "21,22,23,25,53,80,110,111,135,139,143,443,445,993,995,1723,3306,3389,5432,5900,"
+        "6379,8080,8443,8000,8888,9200,27017"
+    )
+    active_scan_timeout_s: float = 1.5  # per-port connect timeout
+    active_scan_concurrency: int = 100  # max simultaneous connect attempts
+    active_banner_bytes: int = 256  # bytes to read for a service banner
+    active_dns_wordlist: str = (  # subdomain brute-force candidates (small, polite default)
+        "www,mail,ftp,webmail,smtp,pop,ns1,ns2,dns,admin,portal,vpn,remote,api,dev,test,"
+        "staging,stage,uat,git,gitlab,jenkins,jira,confluence,intranet,internal,app,apps,"
+        "cloud,cdn,static,assets,img,files,download,shop,store,blog,news,support,help,docs,"
+        "status,monitor,grafana,kibana,prometheus,db,database,sql,mysql,phpmyadmin,cpanel,"
+        "webdisk,autodiscover,mx,mx1,mx2,smtp2,relay,gw,gateway,proxy,fw,firewall,router"
+    )
+    active_crawl_max_pages: int = 40  # crawler page budget
+    active_crawl_max_depth: int = 2  # crawler link depth
+    active_crawl_timeout_s: float = 10.0  # per-request timeout
+
     @property
     def postgres_dsn(self) -> str:
         return (
@@ -94,3 +135,48 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
+def update_env(values: dict[str, str]) -> None:
+    """Persist config values to the .env file AND the live ``settings`` object.
+
+    Used by the first-run setup wizard so a token the user enters survives a restart.
+    Keys are the UPPER_SNAKE env names (e.g. ``HF_TOKEN``); the matching lowercase
+    attribute on ``settings`` is updated in place so the change takes effect immediately.
+    """
+    updates = {k: str(v) for k, v in values.items()}
+    remaining = dict(updates)
+
+    # Update existing keys in place, preserving comments/blank lines/order.
+    lines: list[str] = []
+    if _ENV_PATH.exists():
+        for raw in _ENV_PATH.read_text(encoding="utf-8").splitlines():
+            stripped = raw.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                key = stripped.partition("=")[0].strip()
+                if key in remaining:
+                    lines.append(f"{key}={remaining.pop(key)}")
+                    continue
+            lines.append(raw)
+    # Append any brand-new keys at the end.
+    lines.extend(f"{k}={v}" for k, v in remaining.items())
+    _ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    for k, v in values.items():
+        attr = k.lower()
+        if hasattr(settings, attr):
+            field = settings.model_fields.get(attr)
+            annotation = field.annotation if field else str
+            try:
+                if annotation is bool:
+                    coerced: object = str(v).lower() in {"1", "true", "yes", "on"}
+                elif annotation in (int, float):
+                    coerced = annotation(v)
+                else:
+                    coerced = v
+                setattr(settings, attr, coerced)
+            except (ValueError, TypeError):
+                setattr(settings, attr, v)

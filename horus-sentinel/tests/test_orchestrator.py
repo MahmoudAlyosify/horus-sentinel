@@ -64,9 +64,10 @@ async def test_full_run_with_autovalidate_produces_report(_offline_brain):
     html_path = Path(summary.report_paths["html"])
     assert html_path.exists()
     content = html_path.read_text(encoding="utf-8")
-    assert "HORUS SENTINEL" in content
-    assert "Sinai" in content
-    assert "Chain of Custody" in content
+    # Reports default to Arabic (RTL) now — assert the Arabic brand + chain-of-custody section.
+    assert "حورس سنتينل" in content
+    assert "Sinai" in content  # subject value stays as provided
+    assert "سلسلة الحيازة" in content  # "Chain of Custody"
 
 
 async def test_report_json_is_valid(_offline_brain):

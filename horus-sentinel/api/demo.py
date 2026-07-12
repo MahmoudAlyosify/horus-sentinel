@@ -39,7 +39,7 @@ async def run_guided_demo() -> DemoResponse:
 
     job_id, _ = job_service.create_job(_DEMO_SUBJECT, _demo_roe())
     summary = await orchestrator.run_full(
-        job_id, auto_validate_by="guided_demo", formats=["html", "json"]
+        job_id, auto_validate_by="guided_demo", formats=["html", "json", "pdf"]
     )
     return DemoResponse(
         job_id=job_id,

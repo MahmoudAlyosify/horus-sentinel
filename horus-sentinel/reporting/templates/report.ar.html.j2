@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>حورس سنتينل — تقرير استخباراتي — {{ subject.value }}</title>
+<style>
+  :root { --bg:#0b1220; --panel:#111a2b; --ink:#e6edf7; --muted:#9fb0c9; --line:#20304d;
+          --crit:#d7263d; --high:#f46036; --med:#f0c808; --low:#2e8b57; --info:#6c757d; }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink);
+         font-family:"Segoe UI","Tahoma","Arial",sans-serif;
+         margin:0; padding:0 0 60px; line-height:1.7; direction:rtl; text-align:right; }
+  header { background:linear-gradient(135deg,#0d1b30,#132844); border-bottom:2px solid var(--line);
+           padding:28px 40px; }
+  header h1 { margin:0; font-size:26px; letter-spacing:.3px; }
+  header .tag { color:var(--muted); font-size:13px; margin-top:6px; }
+  main { max-width:960px; margin:0 auto; padding:0 40px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+            padding:22px 26px; margin-top:22px; }
+  section h2 { margin:0 0 6px; font-size:18px; color:#cfe0ff; }
+  section h2 .num { color:var(--muted); font-weight:400; margin-left:8px; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  th,td { text-align:right; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .band { display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700;
+          color:#0b1220; }
+  .band.Critical{background:var(--crit);color:#fff} .band.High{background:var(--high)}
+  .band.Medium{background:var(--med)} .band.Low{background:var(--low);color:#fff}
+  .band.Info{background:var(--info);color:#fff}
+  .metrics { display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; }
+  .metric { background:#0d1728; border:1px solid var(--line); border-radius:8px; padding:12px 16px; min-width:120px; }
+  .metric .v { font-size:24px; font-weight:800; } .metric .l { color:var(--muted); font-size:12px; }
+  .prose { white-space:pre-wrap; color:#dbe6f7; }
+  .muted { color:var(--muted); } code { color:#9ee6b8; direction:ltr; unicode-bidi:embed; display:inline-block; }
+  .finding { border-right:3px solid var(--line); padding:8px 14px; margin:10px 0; background:#0d1728; border-radius:8px 0 0 8px; }
+  .finding.Critical{border-color:var(--crit)} .finding.High{border-color:var(--high)}
+  .finding.Medium{border-color:var(--med)} .finding.Low{border-color:var(--low)}
+  #graph { height:460px; background:#0d1728; border:1px solid var(--line); border-radius:8px; margin-top:12px; direction:ltr; }
+  .foot { color:var(--muted); font-size:12px; text-align:center; margin-top:30px; }
+</style>
+</head>
+<body>
+{% set BAND_AR = {"Critical":"حرجة","High":"عالية","Medium":"متوسطة","Low":"منخفضة","Info":"معلوماتية"} %}
+{% set TYPE_AR = {"domain":"نطاق","region":"منطقة","org":"منظمة","entity":"كيان"} %}
+<header>
+  <h1>🦅 حورس سنتينل — تقرير استخبارات مفتوحة المصدر</h1>
+  <div class="tag">الموضوع: <b>{{ subject.value }}</b> ({{ TYPE_AR.get(subject.type, subject.type) }}) ·
+       المهمة {{ job_id }} · التوليد {{ generated_at }} ·
+       الحالة: {% if validated_by %}مُعتمد — تحقّق منه {{ validated_by }}{% else %}مسودة — بانتظار التحقق{% endif %}</div>
+</header>
+<main>
+
+  {% set card = report_card %}
+  <section>
+    <h2><span class="num">.1</span>الملخص التنفيذي</h2>
+    {% if card %}
+    <div class="metrics">
+      <div class="metric"><div class="v">{{ entity_count }}</div><div class="l">كيان مُرتبَط</div></div>
+      <div class="metric"><div class="v"><span class="band {{ card.top_band }}">{{ BAND_AR.get(card.top_band, card.top_band) }}</span></div><div class="l">أعلى نطاق خطورة</div></div>
+      <div class="metric"><div class="v">{{ card.critical_cve_hits }}</div><div class="l">ثغرة حرجة مكشوفة</div></div>
+      <div class="metric"><div class="v">{{ card.prioritized_findings|length }}</div><div class="l">نتيجة ذات أولوية</div></div>
+    </div>
+    <p class="prose">{{ card.executive_summary }}</p>
+    <p class="muted">التحليل بواسطة: <code>{{ card.generated_by }}</code></p>
+    {% else %}<p class="muted">لم يُولَّد تحليل بعد لهذه المهمة.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">.2</span>الموضوع والنطاق</h2>
+    <table>
+      <tr><th>الموضوع</th><td>{{ subject.value }} ({{ TYPE_AR.get(subject.type, subject.type) }})</td></tr>
+      <tr><th>مصرّح به من</th><td>{{ roe.signed_by }}</td></tr>
+      <tr><th>انتهاء التفويض</th><td>{{ roe.expires_at }}</td></tr>
+      <tr><th>المصادر المُفعّلة</th><td>{% for s in roe.enabled_sources %}<code>{{ s }}</code> {% endfor %}</td></tr>
+      <tr><th>النطاقات ضمن التفويض</th><td>{% for d in roe.in_scope_domains %}<code>{{ d }}</code> {% endfor %}</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">.3</span>الكيانات المكتشفة</h2>
+    <p class="muted">{{ entity_count }} كيان · {% for k,v in kind_histogram.items() %}{{ v }} {{ k }}{% if not loop.last %}، {% endif %}{% endfor %}</p>
+    <table>
+      <tr><th>النوع</th><th>القيمة</th><th>المصدر</th><th>وقت الجمع</th></tr>
+      {% for e in entities[:60] %}
+      <tr><td>{{ e.kind }}</td><td><code>{{ e.value }}</code></td><td>{{ e.produced_by }}</td><td class="muted">{{ e.produced_at }}</td></tr>
+      {% endfor %}
+    </table>
+    {% if entities|length > 60 %}<p class="muted">… و{{ entities|length - 60 }} كيانًا إضافيًا (انظر تصدير JSON).</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">.4</span>السياق والتعرّض</h2>
+    {% if card %}<p class="prose">{{ card.geopolitical_context }}</p>{% endif %}
+    {% if card %}<p class="prose">{{ card.threat_assessment }}</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">.5</span>إثراء الاستخبارات التهديدية</h2>
+    {% if signature_hits %}
+    <p>خدمات عامة تشغّل تقنيات بها ثغرة <b>حرجة</b> معروفة:</p>
+    <table>
+      <tr><th>IP</th><th>الخدمة</th><th>التقنية</th><th>CVE</th><th>CVSS</th></tr>
+      {% for h in signature_hits %}
+      <tr><td><code>{{ h.ip }}</code></td><td>{{ h.service }}</td><td>{{ h.technology }}</td><td>{{ h.cve }}</td><td><b>{{ h.cvss }}</b></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">لا توجد ثغرات حرجة مُرتبطة بخدمات عامة.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">.6</span>رسم المعرفة الاستخباراتي</h2>
+    <p class="muted">{{ graph.nodes|length }} عقدة · {{ graph.edges|length }} علاقة · مُلوَّن حسب الخطورة.</p>
+    <div id="graph"></div>
+    <script>window.__HORUS_GRAPH__ = {{ graph | tojson }};</script>
+  </section>
+
+  <section>
+    <h2><span class="num">.7</span>تحليل المخاطر</h2>
+    <table>
+      <tr><th>الكيان</th><th>النوع</th><th>الدرجة</th><th>النطاق</th></tr>
+      {% for r in risk_rows[:25] %}
+      <tr><td><code>{{ r.value }}</code></td><td>{{ r.kind }}</td><td>{{ "%.1f"|format(r.risk_score) }}</td>
+          <td><span class="band {{ r.risk_band }}">{{ BAND_AR.get(r.risk_band, r.risk_band) }}</span></td></tr>
+      {% endfor %}
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">.8</span>النتائج ذات الأولوية والتوصيات</h2>
+    {% if card and card.prioritized_findings %}
+      {% for f in card.prioritized_findings %}
+      <div class="finding {{ f.risk_band }}">
+        <div><b>{{ f.title }}</b> — <span class="band {{ f.risk_band }}">{{ BAND_AR.get(f.risk_band, f.risk_band) }}</span>
+             <span class="muted">({{ "%.1f"|format(f.risk_score) }})</span></div>
+        <div class="muted">{{ f.why_it_matters }}</div>
+        {% if f.framework %}<div>الإطار المرجعي: <code>{{ f.framework.technique_id }}</code>
+             {{ f.framework.technique_name }}{% if f.framework.tactic %} · {{ f.framework.tactic }}{% endif %}</div>{% endif %}
+        <div>◀ التوصية: {{ f.recommendation }}</div>
+        {% if f.evidence_ids %}<div class="muted">الأدلة: {{ f.evidence_ids|length }} سجل</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}<p class="muted">لا توجد نتائج ذات أولوية.</p>{% endif %}
+    {% if card and card.band_adjustments %}
+      <p class="muted">تعديلات النموذج على النطاق (محدودة ±1، مُسجَّلة):</p>
+      {% for a in card.band_adjustments %}
+      <div class="finding">{{ a.entity_key }}: {{ BAND_AR.get(a.from_band, a.from_band) }} ← {{ BAND_AR.get(a.to_band, a.to_band) }} — {{ a.reason }}</div>
+      {% endfor %}
+    {% endif %}
+  </section>
+
+  <section>
+    <h2><span class="num">.9</span>الملحق — سلسلة الحيازة</h2>
+    <p class="muted">كل اتصال خارجي، بالترتيب، مع نسب المصدر ووقته.</p>
+    <table>
+      <tr><th>الأداة</th><th>المصدر</th><th>الموضوع</th><th>الملخص</th><th>الذاكرة</th><th>الوقت</th></tr>
+      {% for a in audit %}
+      <tr><td>{{ a.tool }}</td><td>{{ a.source_category }}</td><td><code>{{ a.subject }}</code></td>
+          <td class="muted">{{ a.summary }}</td><td>{{ "إصابة" if a.cache_hit else "جلب" }}</td>
+          <td class="muted">{{ a.recorded_at }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="margin-top:14px;">التفويض: موقّع من <b>{{ roe.signed_by }}</b>، ينتهي {{ roe.expires_at }}.</p>
+    {% if validations %}
+    <p class="muted">سجل تحقق المحلل:</p>
+    <table>
+      <tr><th>الإجراء</th><th>المحلل</th><th>ملاحظة</th><th>الوقت</th></tr>
+      {% for v in validations %}
+      <tr><td>{{ v.action }}</td><td>{{ v.analyst }}</td><td class="muted">{{ v.note or "—" }}</td><td class="muted">{{ v.recorded_at }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">⚠ لا يوجد تحقق من محلل — التقرير غير نهائي.</p>{% endif %}
+  </section>
+
+  <div class="foot">حورس سنتينل · عيون أرغوس المائة تجمع؛ وعين حورس تحكم · سلبي · قابل للتدقيق · مُتحقَّق بشريًا</div>
+</main>
+
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script>
+  (function () {
+    var data = window.__HORUS_GRAPH__ || {nodes:[],edges:[]};
+    if (!window.cytoscape || !document.getElementById('graph')) return;
+    cytoscape({
+      container: document.getElementById('graph'),
+      elements: { nodes: data.nodes, edges: data.edges },
+      style: [
+        { selector: 'node', style: { 'background-color':'data(color)', 'label':'data(label)',
+          'color':'#e6edf7','font-size':'8px','width':16,'height':16 } },
+        { selector: 'edge', style: { 'width':1,'line-color':'#20304d','label':'data(label)',
+          'font-size':'6px','color':'#6c757d','target-arrow-shape':'triangle',
+          'target-arrow-color':'#20304d','curve-style':'bezier' } }
+      ],
+      layout: { name: 'cose', animate: false }
+    });
+  })();
+</script>
+</body>
+</html>

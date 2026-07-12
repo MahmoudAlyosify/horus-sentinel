@@ -29,7 +29,11 @@ shodan==1.31.0
 
 # ===== Reporting =====
 jinja2==3.1.4
-weasyprint==62.3              # HTML -> PDF
+weasyprint==62.3              # HTML -> PDF (English / Docker; needs native GTK libs)
+# Real Arabic (RTL) PDF — pure Python, no system libraries (works on Windows out of the box):
+fpdf2==2.8.7                  # PDF engine
+arabic-reshaper==3.0.1        # joins Arabic letter forms
+python-bidi==0.6.11           # right-to-left bidi reordering
 
 # ===== Utilities =====
 tenacity>=8.1.0,<9.0.0      # retries with backoff

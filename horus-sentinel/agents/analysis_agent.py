@@ -30,8 +30,10 @@ _KIND_QUERY = {
     EntityKind.DOMAIN.value: "DNS WHOIS domain registration network information",
     EntityKind.CERTIFICATE.value: "certificate transparency subdomains network information",
     EntityKind.IP.value: "resolved IP infrastructure reputation malicious",
+    EntityKind.PORT.value: "open port network service discovery active scanning exposed",
     EntityKind.SERVICE.value: "public service host software version headers fingerprint",
     EntityKind.TECHNOLOGY.value: "host software version headers fingerprint vulnerability",
+    EntityKind.ENDPOINT.value: "web application public-facing endpoint content discovery exploit",
     EntityKind.CVE.value: "host software version known vulnerability exposure",
     EntityKind.EMAIL.value: "identity email addresses phishing",
     EntityKind.INDICATOR.value: "compromise infrastructure reputation malicious IP",
@@ -43,9 +45,11 @@ _KIND_QUERY = {
 # Kinds worth surfacing as prioritized findings (skip low-signal scaffolding nodes).
 _PRIORITY_KINDS = {
     EntityKind.CVE.value,
+    EntityKind.PORT.value,
     EntityKind.SERVICE.value,
     EntityKind.SUBDOMAIN.value,
     EntityKind.TECHNOLOGY.value,
+    EntityKind.ENDPOINT.value,
     EntityKind.INDICATOR.value,
     EntityKind.EVENT.value,
     EntityKind.IP.value,
@@ -72,8 +76,13 @@ class AnalysisAgent:
         if adjustments:
             top_band = adjustments[0].to_band
 
+        # Offensive mode when active reconnaissance produced live attack surface.
+        active_ran = bool(
+            graph.nodes_by_kind(EntityKind.PORT) or graph.nodes_by_kind(EntityKind.ENDPOINT)
+        )
         rag_context = store.context_block(
-            f"{subject_value} exposure {' '.join(p.entity_key for p in prioritized[:3])}"
+            f"{subject_value} {'attack surface open ports services endpoints ' if active_ran else 'exposure '}"
+            + " ".join(p.entity_key for p in prioritized[:3])
         )
         data = ReasoningInput(
             subject=subject_value,
@@ -83,6 +92,7 @@ class AnalysisAgent:
             top_band=str(top_band),
             critical_cve_hits=len(signature_hits),
             facts=self._facts(graph, prioritized),
+            mode="offensive" if active_ran else "defensive",
         )
         card = await horus_provider.reason(data)
         card.prioritized_findings = prioritized
@@ -158,10 +168,27 @@ class AnalysisAgent:
         attrs = node_data.get("attributes", {})
         if kind == EntityKind.CVE.value:
             return f"Known vulnerability (CVSS {attrs.get('cvss', 'n/a')}) on public-facing technology."
+        if kind == EntityKind.PORT.value:
+            banner = attrs.get("banner") or ""
+            svc = attrs.get("service", "service")
+            return (
+                f"Open port {attrs.get('port')} ({svc}) is live attack surface discovered by "
+                f"active scanning — a potential entry point"
+                + (f"; banner: {banner[:60]}" if banner else ".")
+            )
         if kind == EntityKind.SERVICE.value:
             return "Internet-facing service enlarges the attack surface."
+        if kind == EntityKind.ENDPOINT.value:
+            forms = attrs.get("forms", 0)
+            return (
+                "Discovered web endpoint (active crawl)"
+                + (f" with {forms} input form(s) — an input/attack surface." if forms
+                   else " — expands the mapped surface.")
+            )
         if kind == EntityKind.SUBDOMAIN.value:
-            return "Publicly discoverable subdomain (certificate transparency) — potential entry point."
+            disc = attrs.get("discovery")
+            extra = " (active brute-force)" if disc == "active_bruteforce" else " (certificate transparency)"
+            return f"Discoverable subdomain{extra} — potential entry point."
         if kind == EntityKind.INDICATOR.value:
             return "Reputation signal indicates adjacency to known-malicious infrastructure."
         if kind == EntityKind.EVENT.value:
@@ -215,6 +242,24 @@ class AnalysisAgent:
         facts: list[str] = []
         hist = graph.kind_histogram()
         facts.append("Entity mix: " + ", ".join(f"{v} {k}" for k, v in sorted(hist.items())))
+
+        # Active attack-surface facts (present only when active recon ran).
+        open_ports = [
+            (d["value"], d.get("attributes", {}))
+            for _, d in graph.g.nodes(data=True)
+            if d["kind"] == EntityKind.PORT.value
+        ]
+        if open_ports:
+            summary = ", ".join(
+                f"{v} ({a.get('service', '?')})" for v, a in open_ports[:12]
+            )
+            facts.append(
+                f"Active recon found {len(open_ports)} open port(s) — live attack surface: {summary}"
+            )
+        endpoints = graph.nodes_by_kind(EntityKind.ENDPOINT)
+        if endpoints:
+            facts.append(f"Active web crawl mapped {len(endpoints)} endpoint(s) on the target.")
+
         for _, data in graph.g.nodes(data=True):
             attrs = data.get("attributes", {})
             if data["kind"] == EntityKind.EVENT.value and attrs.get("threat_context_summary"):

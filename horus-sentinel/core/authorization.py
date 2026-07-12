@@ -11,7 +11,7 @@ from __future__ import annotations
 import structlog
 
 from schemas.auth import AuthContext, AuthorizationError
-from schemas.roe import Classification, RoE, SourceCategory
+from schemas.roe import ACTIVE_SOURCE_CATEGORIES, Classification, RoE, SourceCategory
 from schemas.subject import Subject, SubjectType
 
 log = structlog.get_logger("horus.authz")
@@ -41,6 +41,7 @@ class AuthorizationEngine:
 
         self._assert_subject_matches_roe(subject, roe)
         self._assert_web_scope(subject, roe)
+        self._assert_active_scope(subject, roe)
 
         log.info(
             "job_authorized",
@@ -48,6 +49,7 @@ class AuthorizationEngine:
             subject=subject.value,
             subject_type=subject.type.value,
             enabled_sources=[s.value for s in roe.enabled_sources],
+            active=roe.has_active_sources(),
             signed_by=roe.signed_by,
         )
         return AuthContext(job_id=job_id, roe=roe)
@@ -73,6 +75,36 @@ class AuthorizationEngine:
                     f"web_infra is enabled but '{subject.value}' is not in in_scope_domains "
                     f"{sorted(allowed)} — passive infra collection is confined to owned assets."
                 )
+
+    @staticmethod
+    def _assert_active_scope(subject: Subject, roe: RoE) -> None:
+        """Reject an active-recon job up front unless it is explicitly, narrowly authorized.
+
+        This fails at job creation (→ 403) so an out-of-scope active request never even
+        reaches the collection plane. Active recon needs, together:
+          * ``active_authorized=True`` (an explicit second sign-off), and
+          * a domain/organization target that is inside ``in_scope_domains``.
+        """
+        if not roe.has_active_sources():
+            return
+        active = sorted(s.value for s in roe.enabled_sources if s in ACTIVE_SOURCE_CATEGORIES)
+        if not roe.active_authorized:
+            raise AuthorizationError(
+                f"Active sources {active} are enabled but active_authorized is False — "
+                "active reconnaissance requires explicit authorization."
+            )
+        if subject.type not in (SubjectType.DOMAIN, SubjectType.ORGANIZATION):
+            raise AuthorizationError(
+                f"Active sources {active} are enabled but subject type "
+                f"'{subject.type.value}' cannot be an active target (domain/org only)."
+            )
+        target = subject.value.lower()
+        allowed = {d.lower() for d in roe.in_scope_domains}
+        if not any(target == d or target.endswith(f".{d}") for d in allowed):
+            raise AuthorizationError(
+                f"Active sources {active} are enabled but target '{subject.value}' is not in "
+                f"in_scope_domains {sorted(allowed)} — active recon is confined to authorized assets."
+            )
 
 
 # The single passive classification for Path C, exposed for callers building tool calls.

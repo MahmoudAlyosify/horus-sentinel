@@ -1,53 +1,70 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HORUS Sentinel — Command Center</title>
 <style>
   :root{--bg:#070d18;--panel:#0f1a2e;--panel2:#0c1526;--ink:#e8eefb;--muted:#93a6c4;
-        --line:#1d2c47;--accent:#3aa0ff;--accent2:#7ee0c0;
+        --line:#1d2c47;--accent:#3aa0ff;--accent2:#7ee0c0;--warn:#f0a500;
         --crit:#d7263d;--high:#f46036;--med:#f0c808;--low:#2e8b57;--info:#6c757d;}
   *{box-sizing:border-box}
-  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#12223d,transparent),var(--bg);
-       color:var(--ink);font-family:-apple-system,Segoe UI,Roboto,Helvetica,sans-serif;min-height:100vh}
+  body{margin:0;background:radial-gradient(1200px 600px at 30% -10%,#12223d,transparent),var(--bg);
+       color:var(--ink);font-family:"Segoe UI","Tahoma","Cairo",Arial,sans-serif;min-height:100vh}
   header{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--line);
          background:linear-gradient(180deg,#0d1a30,#0a1424)}
-  header .logo{font-size:22px;font-weight:800;letter-spacing:.5px}
+  header .logo{font-size:22px;font-weight:800;letter-spacing:.3px}
   header .logo small{color:var(--muted);font-weight:500;font-size:12px;display:block;letter-spacing:0}
-  .modes{margin-left:auto;display:flex;gap:8px}
-  .mode{padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);
-        color:var(--muted);cursor:pointer;font-size:14px}
+  html[dir=rtl] .modes{margin-right:auto}
+  html[dir=ltr] .modes{margin-left:auto}
+  .modes{display:flex;gap:8px;align-items:center}
+  .mode,.langbtn{padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);
+        color:var(--muted);cursor:pointer;font-size:14px;font-family:inherit}
   .mode.active{color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .langbtn{font-weight:700}
+  .brainchip{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:20px;
+             padding:5px 11px;background:var(--panel2);cursor:pointer;white-space:nowrap}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 5px;background:var(--info)}
+  .dot.on{background:var(--low)} .dot.warn{background:var(--med)}
   main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px 26px;max-width:1500px;margin:0 auto}
   @media(max-width:900px){main{grid-template-columns:1fr}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
   .card h3{margin:0 0 12px;font-size:15px;color:#cfe0ff}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
   input,select{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
-        border-radius:8px;color:var(--ink);font-size:14px}
+        border-radius:8px;color:var(--ink);font-size:14px;font-family:inherit}
   button.btn{width:100%;margin-top:14px;padding:11px;border:0;border-radius:8px;font-weight:700;
-        cursor:pointer;font-size:14px}
+        cursor:pointer;font-size:14px;font-family:inherit}
   .btn.primary{background:linear-gradient(135deg,#2f7ff0,#38c7b0);color:#04121f}
   .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
   .btn.demo{background:linear-gradient(135deg,#f0a500,#f46036);color:#1a0d00}
+  .btn.pdf{background:linear-gradient(135deg,#d7263d,#f46036);color:#fff;margin-top:10px}
   .hint{font-size:11px;color:var(--muted);margin-top:6px}
   .status{margin-top:12px;font-size:13px;color:var(--accent2);min-height:18px}
+  .active-box{margin-top:12px;padding:10px 12px;border:1px solid var(--warn);border-radius:9px;
+              background:rgba(240,165,0,.08)}
+  .active-box label{color:var(--ink);display:flex;align-items:center;gap:8px;margin:0;font-size:13px;cursor:pointer}
+  .active-box input[type=checkbox]{width:auto;margin:0}
+  .active-warn{font-size:11px;color:var(--warn);margin-top:7px;line-height:1.5}
   .metrics{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
   .metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 14px;flex:1;min-width:90px}
   .metric .v{font-size:22px;font-weight:800}.metric .l{font-size:11px;color:var(--muted)}
   .band{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;color:#04121f}
   .band.Critical{background:var(--crit);color:#fff}.band.High{background:var(--high)}
   .band.Medium{background:var(--med)}.band.Low{background:var(--low);color:#fff}.band.Info{background:var(--info);color:#fff}
-  #graph{height:420px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-top:8px}
-  .finding{border-left:3px solid var(--line);padding:8px 12px;margin:8px 0;background:var(--panel2);border-radius:0 8px 8px 0;font-size:13px}
+  #graph{height:420px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-top:8px;direction:ltr}
+  html[dir=rtl] .finding{border-right:3px solid var(--line);border-radius:8px 0 0 8px}
+  html[dir=ltr] .finding{border-left:3px solid var(--line);border-radius:0 8px 8px 0}
+  .finding{padding:8px 12px;margin:8px 0;background:var(--panel2);font-size:13px}
   .finding.Critical{border-color:var(--crit)}.finding.High{border-color:var(--high)}
   .finding.Medium{border-color:var(--med)}.finding.Low{border-color:var(--low)}
-  .prose{white-space:pre-wrap;font-size:13px;color:#dbe6f7;line-height:1.55}
+  .prose{white-space:pre-wrap;font-size:13px;color:#dbe6f7;line-height:1.7}
   table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
-  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line)}
+  html[dir=rtl] th,html[dir=rtl] td{text-align:right}
+  html[dir=ltr] th,html[dir=ltr] td{text-align:left}
   th{color:var(--muted)}
-  code{color:var(--accent2)}
+  code{color:var(--accent2);direction:ltr;unicode-bidi:embed;display:inline-block}
   .muted{color:var(--muted)}
   .row{display:flex;gap:10px}.row>*{flex:1}
   .tabs{display:flex;gap:8px;margin-bottom:12px}
@@ -56,111 +73,205 @@
   .hidden{display:none}
   .chat{height:360px;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px}
   .bubble{margin:8px 0;padding:10px 12px;border-radius:10px;max-width:85%}
-  .bubble.user{background:#173154;margin-left:auto}.bubble.horus{background:#12233c;border:1px solid var(--line)}
+  html[dir=rtl] .bubble.user{margin-right:auto}html[dir=ltr] .bubble.user{margin-left:auto}
+  .bubble.user{background:#173154}.bubble.horus{background:#12233c;border:1px solid var(--line)}
+  .overlay{position:fixed;inset:0;background:rgba(3,8,18,.75);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(520px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal h2{margin:0 0 6px;font-size:19px}
+  .modal .sub{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.6}
+  .modal .err{color:#ff9b9b;font-size:12px;min-height:16px;margin-top:8px}
+  .modal .actions{display:flex;gap:10px;margin-top:16px}
+  .modal a{color:var(--accent)}
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">🦅 HORUS SENTINEL <small>Command Center · ARGUS eyes gather · the Eye of HORUS judges</small></div>
+  <div class="logo">🦅 HORUS SENTINEL <small data-i18n="app_sub"></small></div>
   <div class="modes">
-    <div class="mode active" data-mode="recon" onclick="switchMode('recon')">OSINT-Recon</div>
-    <div class="mode" data-mode="geo" onclick="switchMode('geo')">Geo-Intel</div>
+    <div class="langbtn" id="langBtn" onclick="toggleLang()">EN</div>
+    <div class="brainchip" id="brainChip" onclick="openSetup()"><span class="dot" id="brainDot"></span><span id="brainLabel"></span></div>
+    <div class="mode active" data-mode="recon" data-i18n="mode_recon" onclick="switchMode('recon')"></div>
+    <div class="mode" data-mode="geo" data-i18n="mode_geo" onclick="switchMode('geo')"></div>
   </div>
 </header>
 
 <main>
-  <!-- LEFT: control panel -->
   <div class="card" id="panel-left">
     <div id="recon-controls">
-      <h3>New Assessment</h3>
-      <label>Subject type</label>
+      <h3 data-i18n="new_assessment"></h3>
+      <label data-i18n="subject_type"></label>
       <select id="subjType" onchange="onTypeChange()">
-        <option value="domain">Domain (owned / public)</option>
-        <option value="region">Region + timeframe</option>
+        <option value="domain" data-i18n="opt_domain"></option>
+        <option value="region" data-i18n="opt_region"></option>
       </select>
-      <label>Subject</label>
-      <input id="subjValue" placeholder="example.com or Sinai" value="example.com">
+      <label data-i18n="subject_label"></label>
+      <input id="subjValue" value="example.com">
       <div id="regionFields" class="row hidden">
-        <div><label>Year from</label><input id="yearFrom" value="2018"></div>
-        <div><label>Year to</label><input id="yearTo" value="2019"></div>
+        <div><label data-i18n="year_from"></label><input id="yearFrom" value="2018"></div>
+        <div><label data-i18n="year_to"></label><input id="yearTo" value="2019"></div>
       </div>
-      <label>Analyst (RoE signer)</label>
+      <label data-i18n="analyst_label"></label>
       <input id="analyst" value="analyst_mahmoud">
-      <button class="btn ghost" onclick="genRoE()">① Generate demo RoE</button>
-      <button class="btn primary" onclick="runAssessment()">② Run assessment</button>
+
+      <div class="active-box" id="activeBox">
+        <label><input type="checkbox" id="activeToggle" onchange="onActiveToggle()"> <span data-i18n="active_toggle"></span></label>
+        <div class="active-warn" data-i18n="active_warn"></div>
+      </div>
+
+      <button class="btn ghost" onclick="genRoE()" data-i18n="gen_roe"></button>
+      <button class="btn primary" onclick="runAssessment()" data-i18n="run_assessment"></button>
       <div class="status" id="status"></div>
       <hr style="border-color:var(--line);margin:16px 0">
-      <button class="btn demo" onclick="guidedDemo()">▶ Run Guided Demo (zero setup)</button>
-      <div class="hint">Pre-authorized safe subject (Sinai region), fully offline. One click → full report.</div>
+      <button class="btn demo" onclick="guidedDemo()" data-i18n="guided_demo"></button>
+      <div class="hint" data-i18n="demo_hint"></div>
     </div>
   </div>
 
-  <!-- RIGHT: results -->
   <div class="card" id="panel-right">
-    <!-- RECON RESULTS -->
     <div id="recon-view">
       <div class="tabs">
-        <div class="tab active" data-tab="report" onclick="switchTab('report')">Report</div>
-        <div class="tab" data-tab="graph" onclick="switchTab('graph')">Knowledge Graph</div>
-        <div class="tab" data-tab="custody" onclick="switchTab('custody')">Chain of Custody</div>
+        <div class="tab active" data-tab="report" data-i18n="tab_report" onclick="switchTab('report')"></div>
+        <div class="tab" data-tab="graph" data-i18n="tab_graph" onclick="switchTab('graph')"></div>
+        <div class="tab" data-tab="custody" data-i18n="tab_custody" onclick="switchTab('custody')"></div>
       </div>
-
       <div id="tab-report">
-        <div id="empty" class="muted">Submit a subject or run the Guided Demo to see the intelligence report.</div>
+        <div id="empty" class="muted" data-i18n="empty_report"></div>
         <div id="report" class="hidden"></div>
       </div>
-
       <div id="tab-graph" class="hidden">
-        <div class="muted" id="graphMeta">The risk-colored intelligence graph appears here after a run.</div>
+        <div class="muted" id="graphMeta"></div>
         <div id="graph"></div>
       </div>
-
       <div id="tab-custody" class="hidden">
-        <div class="muted" id="custodyMeta">Every external touch, in order — the chain of custody.</div>
+        <div class="muted" id="custodyMeta"></div>
         <table id="custodyTable"></table>
       </div>
     </div>
-
-    <!-- GEO-INTEL (preserved chat mode) -->
     <div id="geo-view" class="hidden">
-      <h3>Geo-Intel — HORUS reasoning (preserved mode)</h3>
-      <div class="chat" id="chat">
-        <div class="bubble horus">I am HORUS. Ask me about a region + timeframe (e.g. "Sinai 2018"). In the full stack I am the fine-tuned Llama-3 served locally via Ollama.</div>
-      </div>
+      <h3 data-i18n="geo_title"></h3>
+      <div class="chat" id="chat"><div class="bubble horus" data-i18n="geo_greeting"></div></div>
       <div class="row" style="margin-top:10px">
-        <input id="geoInput" placeholder="Assess Sinai 2018–2019">
-        <button class="btn primary" style="max-width:120px;margin:0" onclick="geoAsk()">Send</button>
+        <input id="geoInput">
+        <button class="btn primary" style="max-width:120px;margin:0" onclick="geoAsk()" data-i18n="geo_send"></button>
       </div>
-      <div class="hint">This view maps to the existing Horus-OSINT chat. Wired to <code>/demo</code> here for a live, offline sample.</div>
+      <div class="hint" data-i18n="geo_hint"></div>
     </div>
   </div>
 </main>
 
+<div class="overlay hidden" id="setupOverlay">
+  <div class="modal">
+    <h2 data-i18n="setup_title"></h2>
+    <div class="sub" data-i18n="setup_sub"></div>
+    <label data-i18n="setup_token_label"></label>
+    <input id="hfToken" type="password" placeholder="hf_xxxxxxxxxxxx" autocomplete="off">
+    <label data-i18n="setup_backend_label"></label>
+    <select id="hfBackend">
+      <option value="hybrid" data-i18n="be_hybrid"></option>
+      <option value="hf_serverless" data-i18n="be_serverless"></option>
+      <option value="hf_endpoint" data-i18n="be_endpoint"></option>
+      <option value="ollama" data-i18n="be_ollama"></option>
+    </select>
+    <label data-i18n="setup_endpoint_label"></label>
+    <input id="hfEndpoint" placeholder="https://xxxx.endpoints.huggingface.cloud">
+    <div class="err" id="setupErr"></div>
+    <div class="actions">
+      <button class="btn primary" onclick="saveSetup()" data-i18n="setup_save"></button>
+      <button class="btn ghost" onclick="closeSetup()" data-i18n="setup_later"></button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
 <script>
-const API = ""; // same origin
-let currentRoE = null, cy = null, lastGraph = null;
+const API = "";
+let currentRoE=null, cy=null, lastGraph=null, lastJobId=null, LANG="ar";
+const BAND={ar:{Critical:"حرجة",High:"عالية",Medium:"متوسطة",Low:"منخفضة",Info:"معلوماتية"},
+            en:{Critical:"Critical",High:"High",Medium:"Medium",Low:"Low",Info:"Info"}};
+
+const T={
+ ar:{app_sub:"مركز القيادة · عيون أرغوس تجمع · وعين حورس تحكم",mode_recon:"استطلاع OSINT",mode_geo:"استخبارات جيوسياسية",
+  new_assessment:"تقييم جديد",subject_type:"نوع الموضوع",opt_domain:"نطاق (مملوك / مصرّح به)",opt_region:"منطقة + إطار زمني",
+  subject_label:"الموضوع",year_from:"من سنة",year_to:"إلى سنة",analyst_label:"المحلل (موقّع التفويض)",
+  active_toggle:"استطلاع فعّال هجومي (أهدافك المصرّح بيها فقط)",
+  active_warn:"⚠ يُرسل حركة فعلية للهدف (مسح منافذ + تعداد + زحف). يعمل فقط على نطاق تُدرجه ضمن التفويض؛ أي هدف خارج النطاق يُرفض تلقائيًا (403). استطلاع فقط — بلا استغلال.",
+  gen_roe:"① توليد تفويض RoE",run_assessment:"② تشغيل التقييم",guided_demo:"▶ العرض الإرشادي (بدون إعداد)",
+  demo_hint:"موضوع آمن مُصرّح به مسبقًا (سيناء)، يعمل دون اتصال. نقرة ← تقرير كامل.",
+  tab_report:"التقرير",tab_graph:"رسم المعرفة",tab_custody:"سلسلة الحيازة",
+  empty_report:"أرسِل موضوعًا أو شغّل العرض الإرشادي لعرض التقرير.",geo_title:"استخبارات جيوسياسية — استدلال حورس",
+  geo_greeting:"أنا حورس. اسألني عن منطقة + إطار زمني (مثل «سيناء 2018»).",geo_send:"إرسال",
+  geo_hint:"هذا الوضع يقابل محادثة Horus-OSINT الأصلية.",
+  entities:"كيانات",top_band:"أعلى نطاق",critical_cves:"ثغرات حرجة",findings:"نتائج",
+  exec_summary:"الملخص التنفيذي",geopolitical:"السياق",threat_assessment:"تقييم التهديد",prioritized:"النتائج ذات الأولوية",
+  download_pdf:"⬇ تحميل تقرير PDF",reasoning_by:"التحليل بواسطة",recommendation:"التوصية",framework:"الإطار المرجعي",none:"لا توجد.",
+  setup_title:"🔑 إعداد العقل — الاتصال بنموذجك على Hugging Face",
+  setup_sub:"أدخل رمز Hugging Face لتشغيل النموذج أونلاين. يُتحقَّق منه ويُحفظ محليًا. للاستخدام السيادي اختر «Ollama محلي» — لا تخرج أي بيانات.",
+  setup_token_label:"رمز Hugging Face (HF Token)",setup_backend_label:"الخلفية (Backend)",
+  setup_endpoint_label:"رابط Endpoint مخصص (اختياري)",be_hybrid:"هجين (أونلاين ثم محلي) — مُوصى به",
+  be_serverless:"HF Serverless فقط",be_endpoint:"HF Endpoint مخصص",be_ollama:"Ollama محلي فقط (سيادي)",
+  setup_save:"حفظ وتفعيل",setup_later:"لاحقًا (دون اتصال)",
+  brain_online:"العقل: أونلاين",brain_local:"العقل: محلي (Ollama)",brain_offline:"العقل: دون اتصال — للإعداد"},
+ en:{app_sub:"Command Center · ARGUS eyes gather · the Eye of HORUS judges",mode_recon:"OSINT-Recon",mode_geo:"Geo-Intel",
+  new_assessment:"New Assessment",subject_type:"Subject type",opt_domain:"Domain (owned / authorized)",opt_region:"Region + timeframe",
+  subject_label:"Subject",year_from:"Year from",year_to:"Year to",analyst_label:"Analyst (RoE signer)",
+  active_toggle:"Active offensive recon (authorized targets only)",
+  active_warn:"⚠ Sends real traffic to the target (port scan + enumeration + crawl). Runs only on a domain you list in scope; any out-of-scope target is auto-refused (403). Reconnaissance only — no exploitation.",
+  gen_roe:"① Generate RoE",run_assessment:"② Run assessment",guided_demo:"▶ Guided Demo (zero setup)",
+  demo_hint:"Pre-authorized safe subject (Sinai), fully offline. One click → full report.",
+  tab_report:"Report",tab_graph:"Knowledge Graph",tab_custody:"Chain of Custody",
+  empty_report:"Submit a subject or run the Guided Demo to see the report.",geo_title:"Geo-Intel — HORUS reasoning",
+  geo_greeting:"I am HORUS. Ask me about a region + timeframe (e.g. \"Sinai 2018\").",geo_send:"Send",
+  geo_hint:"This view maps to the original Horus-OSINT chat.",
+  entities:"Entities",top_band:"Top band",critical_cves:"Critical CVEs",findings:"Findings",
+  exec_summary:"Executive Summary",geopolitical:"Context",threat_assessment:"Threat Assessment",prioritized:"Prioritized Findings",
+  download_pdf:"⬇ Download PDF report",reasoning_by:"Reasoning by",recommendation:"Recommendation",framework:"Framework",none:"None.",
+  setup_title:"🔑 Brain setup — connect your Hugging Face model",
+  setup_sub:"Enter your Hugging Face token to run the model online. It is validated and saved locally. For sovereign use pick 'Local Ollama' — nothing leaves the box.",
+  setup_token_label:"Hugging Face token",setup_backend_label:"Backend",
+  setup_endpoint_label:"Dedicated Endpoint URL (optional)",be_hybrid:"Hybrid (online then local) — recommended",
+  be_serverless:"HF Serverless only",be_endpoint:"Dedicated HF Endpoint",be_ollama:"Local Ollama only (sovereign)",
+  setup_save:"Save & activate",setup_later:"Later (offline)",
+  brain_online:"Brain: online",brain_local:"Brain: local (Ollama)",brain_offline:"Brain: offline — click to set up"}};
+
+function t(k){return (T[LANG]&&T[LANG][k])||k;}
+function applyLang(lang){
+  LANG=lang;
+  document.documentElement.lang=lang;
+  document.documentElement.dir=(lang==="ar")?"rtl":"ltr";
+  document.getElementById("langBtn").textContent=(lang==="ar")?"EN":"ع";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.getElementById("geoInput").placeholder=(lang==="ar")?"قيّم سيناء 2018–2019":"Assess Sinai 2018–2019";
+  refreshBrain();
+}
+async function toggleLang(){
+  const next=(LANG==="ar")?"en":"ar";
+  applyLang(next);
+  try{ await fetch(API+"/setup/language",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({language:next})}); }catch(e){}
+}
 
 function switchMode(m){
   document.querySelectorAll('.mode').forEach(e=>e.classList.toggle('active', e.dataset.mode===m));
   document.getElementById('recon-view').classList.toggle('hidden', m!=='recon');
   document.getElementById('geo-view').classList.toggle('hidden', m!=='geo');
-  document.getElementById('recon-controls').classList.toggle('hidden', m!=='recon');
   document.getElementById('panel-left').classList.toggle('hidden', m!=='recon');
 }
-function switchTab(t){
-  document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('active', e.dataset.tab===t));
-  document.getElementById('tab-report').classList.toggle('hidden', t!=='report');
-  document.getElementById('tab-graph').classList.toggle('hidden', t!=='graph');
-  document.getElementById('tab-custody').classList.toggle('hidden', t!=='custody');
-  if(t==='graph' && lastGraph) renderGraph(lastGraph);
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('active', e.dataset.tab===tab));
+  document.getElementById('tab-report').classList.toggle('hidden', tab!=='report');
+  document.getElementById('tab-graph').classList.toggle('hidden', tab!=='graph');
+  document.getElementById('tab-custody').classList.toggle('hidden', tab!=='custody');
+  if(tab==='graph' && lastGraph) renderGraph(lastGraph);
 }
 function onTypeChange(){
-  const t=document.getElementById('subjType').value;
-  document.getElementById('regionFields').classList.toggle('hidden', t!=='region');
-  document.getElementById('subjValue').value = t==='region' ? 'Sinai' : 'example.com';
+  const ty=document.getElementById('subjType').value;
+  document.getElementById('regionFields').classList.toggle('hidden', ty!=='region');
+  document.getElementById('subjValue').value = ty==='region' ? 'Sinai' : 'example.com';
+  // active recon only makes sense for domains
+  document.getElementById('activeBox').style.display = ty==='domain' ? '' : 'none';
+  if(ty!=='domain') document.getElementById('activeToggle').checked=false;
 }
-function setStatus(s){ document.getElementById('status').textContent = s; }
+function onActiveToggle(){ currentRoE=null; setStatus(''); }
+function setStatus(s){ document.getElementById('status').textContent=s; }
 
 function subjectPayload(){
   const type=document.getElementById('subjType').value;
@@ -172,80 +283,83 @@ function subjectPayload(){
 function genRoE(){
   const type=document.getElementById('subjType').value;
   const value=document.getElementById('subjValue').value.trim();
-  const sources = type==='region' ? ['geo_events','threat_intel']
-                                   : ['public_records','web_infra','threat_intel'];
+  const active = type==='domain' && document.getElementById('activeToggle').checked;
+  let sources = type==='region' ? ['geo_events','threat_intel'] : ['public_records','web_infra','threat_intel'];
+  if(active) sources = sources.concat(['active_recon','web_crawl']);
   const exp=new Date(Date.now()+3600e3).toISOString();
   currentRoE={subject:value,enabled_sources:sources,in_scope_domains:type==='domain'?[value]:[],
-              signed_by:document.getElementById('analyst').value,expires_at:exp};
-  setStatus('✓ Demo RoE generated — sources: '+sources.join(', '));
+              active_authorized:active,signed_by:document.getElementById('analyst').value,expires_at:exp};
+  setStatus((LANG==="ar"?"✓ تم توليد التفويض — المصادر: ":"✓ RoE generated — sources: ")+sources.join('، ')+(active?(LANG==="ar"?" (فعّال)":" (active)"):""));
 }
 async function runAssessment(){
   if(!currentRoE) genRoE();
-  setStatus('Creating job…');
+  setStatus(LANG==="ar"?"جارٍ إنشاء المهمة…":"Creating job…");
   try{
     const cr=await fetch(API+'/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({subject:subjectPayload(),roe:currentRoE})});
-    if(cr.status===403){ setStatus('⛔ Refused by authorization gate: '+(await cr.json()).detail); return; }
+    if(cr.status===403){ setStatus('⛔ '+(LANG==="ar"?"رُفض من بوابة التفويض: ":"Refused by authorization gate: ")+(await cr.json()).detail); return; }
     if(!cr.ok){ setStatus('Error: '+(await cr.text())); return; }
     const {id}=await cr.json();
-    setStatus('Running collection + reasoning (job '+id.slice(0,8)+')…');
+    setStatus((LANG==="ar"?"جارٍ الجمع والاستدلال (المهمة ":"Running collection + reasoning (job ")+id.slice(0,8)+")…");
     const rr=await fetch(API+'/jobs/'+id+'/run',{method:'POST'});
     const rs=await rr.json();
-    setStatus('Validating…');
+    setStatus(LANG==="ar"?"جارٍ التحقق والاعتماد…":"Validating…");
     await fetch(API+'/jobs/'+id+'/validate',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'validate',analyst:currentRoE.signed_by,note:'Validated via Command Center'})});
     await loadReport(id);
-    setStatus('✓ Done — '+rs.entity_count+' entities, '+rs.agents_run.join('/'));
+    setStatus('✓ '+(LANG==="ar"?"اكتمل — ":"Done — ")+rs.entity_count+(LANG==="ar"?" كيان · ":" entities · ")+rs.agents_run.join('/'));
   }catch(e){ setStatus('Error: '+e.message); }
 }
 async function guidedDemo(){
-  setStatus('Running Guided Demo…');
+  setStatus(LANG==="ar"?"جارٍ تشغيل العرض الإرشادي…":"Running Guided Demo…");
   try{
-    const r=await fetch(API+'/demo',{method:'POST'});
-    const d=await r.json();
+    const r=await fetch(API+'/demo',{method:'POST'}); const d=await r.json();
     await loadReport(d.job_id);
-    setStatus('✓ Guided Demo complete — subject '+d.subject+', '+d.entity_count+' entities');
+    setStatus('✓ '+(LANG==="ar"?"اكتمل — ":"Done — ")+d.subject+", "+d.entity_count+(LANG==="ar"?" كيان":" entities"));
   }catch(e){ setStatus('Error: '+e.message); }
 }
 async function loadReport(jobId){
+  lastJobId=jobId;
   const r=await fetch(API+'/jobs/'+jobId+'/report');
-  if(!r.ok){ setStatus('Report not ready'); return; }
+  if(!r.ok){ setStatus(LANG==="ar"?"التقرير غير جاهز":"Report not ready"); return; }
   const {report_card:card,graph}=await r.json();
-  lastGraph=graph;
-  renderReport(card);
+  lastGraph=graph; renderReport(card);
   renderCustody(await (await fetch(API+'/jobs/'+jobId)).json());
   if(!document.getElementById('tab-graph').classList.contains('hidden')) renderGraph(graph);
 }
+function bandTag(b){ return `<span class="band ${b}">${(BAND[LANG][b]||b)}</span>`; }
 function renderReport(card){
   document.getElementById('empty').classList.add('hidden');
   const el=document.getElementById('report'); el.classList.remove('hidden');
   const f=(card.prioritized_findings||[]).map(p=>`
-    <div class="finding ${p.risk_band}"><b>${p.title}</b> <span class="band ${p.risk_band}">${p.risk_band}</span>
+    <div class="finding ${p.risk_band}"><b>${p.title}</b> ${bandTag(p.risk_band)}
     <span class="muted">(${p.risk_score.toFixed(1)})</span><br><span class="muted">${p.why_it_matters}</span><br>
-    ${p.framework?`Framework: <code>${p.framework.technique_id}</code> ${p.framework.technique_name}<br>`:''}
-    ➜ ${p.recommendation}</div>`).join('');
+    ${p.framework?`${t('framework')}: <code>${p.framework.technique_id}</code> ${p.framework.technique_name}<br>`:''}
+    ${t('recommendation')}: ${p.recommendation}</div>`).join('');
   el.innerHTML=`
     <div class="metrics">
-      <div class="metric"><div class="v">${card.entity_count}</div><div class="l">Entities</div></div>
-      <div class="metric"><div class="v"><span class="band ${card.top_band}">${card.top_band}</span></div><div class="l">Top band</div></div>
-      <div class="metric"><div class="v">${card.critical_cve_hits}</div><div class="l">Critical CVEs</div></div>
-      <div class="metric"><div class="v">${(card.prioritized_findings||[]).length}</div><div class="l">Findings</div></div>
+      <div class="metric"><div class="v">${card.entity_count}</div><div class="l">${t('entities')}</div></div>
+      <div class="metric"><div class="v">${bandTag(card.top_band)}</div><div class="l">${t('top_band')}</div></div>
+      <div class="metric"><div class="v">${card.critical_cve_hits}</div><div class="l">${t('critical_cves')}</div></div>
+      <div class="metric"><div class="v">${(card.prioritized_findings||[]).length}</div><div class="l">${t('findings')}</div></div>
     </div>
-    <h3>Executive Summary</h3><p class="prose">${card.executive_summary||''}</p>
-    <p class="muted">Reasoning by <code>${card.generated_by}</code></p>
-    <h3>Threat Assessment</h3><p class="prose">${card.threat_assessment||''}</p>
-    <h3>Prioritized Findings</h3>${f||'<p class="muted">None.</p>'}`;
+    <button class="btn pdf" onclick="downloadPdf()">${t('download_pdf')}</button>
+    <h3>${t('exec_summary')}</h3><p class="prose">${card.executive_summary||''}</p>
+    <p class="muted">${t('reasoning_by')} <code>${card.generated_by}</code></p>
+    <h3>${t('geopolitical')}</h3><p class="prose">${card.geopolitical_context||''}</p>
+    <h3>${t('threat_assessment')}</h3><p class="prose">${card.threat_assessment||''}</p>
+    <h3>${t('prioritized')}</h3>${f||('<p class="muted">'+t('none')+'</p>')}`;
 }
+function downloadPdf(){ if(lastJobId) window.open(API+'/jobs/'+lastJobId+'/download/pdf','_blank'); }
 function renderCustody(job){
   document.getElementById('custodyMeta').textContent =
-    'Job '+job.id.slice(0,8)+' · status '+job.status+' · '+job.audit_count+' audited touches'+
-    (job.validated_by?(' · validated by '+job.validated_by):'');
+    (LANG==="ar"?"المهمة ":"Job ")+job.id.slice(0,8)+" · "+job.status+" · "+job.audit_count+(LANG==="ar"?" اتصال مُدقَّق":" audited touches")+
+    (job.validated_by?(" · "+(LANG==="ar"?"تحقّق منه ":"validated by ")+job.validated_by):"");
 }
 function renderGraph(graph){
-  document.getElementById('graphMeta').textContent=(graph.nodes||[]).length+' nodes · '+(graph.edges||[]).length+' edges · risk-colored';
-  if(!window.cytoscape){ document.getElementById('graph').innerHTML='<p class="muted" style="padding:16px">Cytoscape failed to load (offline?). Graph JSON is still in the report export.</p>'; return; }
-  cy=cytoscape({container:document.getElementById('graph'),
-    elements:{nodes:graph.nodes||[],edges:graph.edges||[]},
+  document.getElementById('graphMeta').textContent=(graph.nodes||[]).length+(LANG==="ar"?" عقدة · ":" nodes · ")+(graph.edges||[]).length+(LANG==="ar"?" علاقة":" edges");
+  if(!window.cytoscape){ document.getElementById('graph').innerHTML='<p class="muted" style="padding:16px">Cytoscape offline.</p>'; return; }
+  cy=cytoscape({container:document.getElementById('graph'),elements:{nodes:graph.nodes||[],edges:graph.edges||[]},
     style:[{selector:'node',style:{'background-color':'data(color)','label':'data(label)','color':'#e8eefb','font-size':'8px','width':16,'height':16}},
            {selector:'edge',style:{'width':1,'line-color':'#1d2c47','label':'data(label)','font-size':'6px','color':'#93a6c4','target-arrow-shape':'triangle','target-arrow-color':'#1d2c47','curve-style':'bezier'}}],
     layout:{name:'cose',animate:false}});
@@ -254,13 +368,45 @@ async function geoAsk(){
   const inp=document.getElementById('geoInput'); const q=inp.value.trim(); if(!q) return;
   const chat=document.getElementById('chat');
   chat.innerHTML+=`<div class="bubble user">${q}</div>`; inp.value='';
-  chat.innerHTML+=`<div class="bubble horus">Running a live offline assessment…</div>`;
   const r=await fetch(API+'/demo',{method:'POST'}); const d=await r.json();
   const rep=await (await fetch(API+'/jobs/'+d.job_id+'/report')).json();
-  chat.innerHTML+=`<div class="bubble horus"><b>${d.subject}</b> — ${rep.report_card.top_band} risk.<br>${rep.report_card.geopolitical_context||rep.report_card.executive_summary}</div>`;
+  chat.innerHTML+=`<div class="bubble horus"><b>${d.subject}</b> — ${(BAND[LANG][rep.report_card.top_band]||rep.report_card.top_band)}.<br>${rep.report_card.geopolitical_context||rep.report_card.executive_summary}</div>`;
   chat.scrollTop=chat.scrollHeight;
 }
-onTypeChange();
+
+async function refreshBrain(){
+  try{
+    const s=await (await fetch(API+'/setup/status')).json();
+    const dot=document.getElementById('brainDot'), lbl=document.getElementById('brainLabel');
+    if(s.online_ready){ lbl.textContent=t('brain_online')+' ('+(s.hf_username||'HF')+')'; dot.className='dot on'; }
+    else if(s.ollama_ready){ lbl.textContent=t('brain_local'); dot.className='dot on'; }
+    else { lbl.textContent=t('brain_offline'); dot.className='dot warn'; }
+    return s;
+  }catch(e){ return null; }
+}
+function openSetup(){ document.getElementById('setupOverlay').classList.remove('hidden'); }
+function closeSetup(){ document.getElementById('setupOverlay').classList.add('hidden'); }
+async function saveSetup(){
+  const err=document.getElementById('setupErr'); err.textContent='';
+  const token=document.getElementById('hfToken').value.trim();
+  const backend=document.getElementById('hfBackend').value;
+  const endpoint=document.getElementById('hfEndpoint').value.trim();
+  if(backend!=='ollama' && !token){ err.textContent=(LANG==="ar"?"أدخل رمز Hugging Face أو اختر «Ollama محلي».":"Enter a token or pick Local Ollama."); return; }
+  err.textContent=(LANG==="ar"?"جارٍ الحفظ…":"Saving…");
+  try{
+    const body = backend==='ollama' ? {token:'',backend:'ollama'} : {token,backend,endpoint_url:endpoint||null};
+    const r=await fetch(API+'/setup/hf-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){ err.textContent='✗ '+((await r.json()).detail||'failed'); return; }
+    err.textContent='✓'; await refreshBrain(); setTimeout(closeSetup,600);
+  }catch(e){ err.textContent='Error: '+e.message; }
+}
+
+(async function init(){
+  const s=await refreshBrain();
+  applyLang(s && s.report_language==="en" ? "en" : "ar");
+  onTypeChange();
+  if(s && !s.configured) openSetup();
+})();
 </script>
 </body>
 </html>

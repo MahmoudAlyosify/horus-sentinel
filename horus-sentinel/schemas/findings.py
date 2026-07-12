@@ -35,8 +35,10 @@ class EntityKind(StrEnum):
     DOMAIN = "Domain"
     SUBDOMAIN = "Subdomain"
     IP = "IP"
+    PORT = "Port"  # an open port discovered by active scanning
     SERVICE = "Service"
     TECHNOLOGY = "Technology"
+    ENDPOINT = "Endpoint"  # a discovered URL / path (active web crawl)
     CERTIFICATE = "Certificate"
     EMAIL = "Email"
     PERSON = "Person"

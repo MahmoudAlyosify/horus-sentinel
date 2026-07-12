@@ -54,6 +54,30 @@
       "defensive_note": "Treat CT logs, WHOIS and scan datasets as adversary intelligence sources; reduce what they reveal."
     },
     {
+      "id": "T1046",
+      "name": "Network Service Discovery",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Active scanning enumerates listening services and ports on a target host. Each open port is a live service an adversary would probe next; banners disclose product and version that map to known CVEs. This is the authorized active-recon output — discovery only, never exploitation.",
+      "defensive_note": "Close or firewall unnecessary ports; restrict management services to VPN; suppress version banners."
+    },
+    {
+      "id": "T1190",
+      "name": "Exploit Public-Facing Application",
+      "tactic": "TA0001",
+      "tactic_name": "Initial Access",
+      "text": "An adversary's likely NEXT step after recon: exploiting a weakness in an internet-facing service or web endpoint discovered during scanning/crawling. HORUS Sentinel maps this as a downstream risk to prioritize — it performs discovery only and stops here, before any exploitation.",
+      "defensive_note": "Patch and harden internet-facing apps; put a WAF in front; reduce the exposed endpoint/form surface found by the crawler."
+    },
+    {
+      "id": "T1133",
+      "name": "External Remote Services",
+      "tactic": "TA0043",
+      "tactic_name": "Reconnaissance",
+      "text": "Exposed remote-access services (RDP 3389, SSH 22, VPN, databases) discovered by active scanning are prime adversary targets for later access. Their presence on the public internet is a high-priority exposure finding.",
+      "defensive_note": "Place remote-access behind VPN/MFA; never expose databases (3306/5432/6379/27017/9200) to the internet."
+    },
+    {
       "id": "T1583",
       "name": "Acquire Infrastructure",
       "tactic": "TA0042",

@@ -18,8 +18,10 @@ _BASE_CRITICALITY = {
     EntityKind.ORGANIZATION.value: 0.6,
     EntityKind.SUBDOMAIN.value: 0.5,
     EntityKind.IP.value: 0.5,
+    EntityKind.PORT.value: 0.6,  # an open port is live attack surface
     EntityKind.SERVICE.value: 0.5,
     EntityKind.TECHNOLOGY.value: 0.5,
+    EntityKind.ENDPOINT.value: 0.4,
     EntityKind.THREAT_ACTOR.value: 0.7,
 }
 

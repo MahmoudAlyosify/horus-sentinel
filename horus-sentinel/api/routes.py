@@ -6,9 +6,11 @@ refused with a 403 and a human-readable reason. That refusal is a feature, not a
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse
 
 from api.dto import (
     EnqueueResponse,
@@ -19,6 +21,7 @@ from api.dto import (
     ValidationRequest,
     ValidationResponse,
 )
+from agents.report_agent import report_agent
 from core.analysis_store import load_analysis
 from core.config import settings
 from core.jobs import job_service
@@ -26,6 +29,8 @@ from schemas.auth import AuthorizationError
 from schemas.state import JobStatus
 from workflows.orchestrator import orchestrator
 from workflows.worker import enqueue_job
+
+_MEDIA = {"pdf": "application/pdf", "html": "text/html", "json": "application/json"}
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -123,9 +128,47 @@ async def validate_job(job_id: str, req: ValidationRequest) -> ValidationRespons
         new_status = job_service.record_validation(job_id, req.action, req.analyst, req.note)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    # On a 'validate' action the report becomes final — render the full deliverable set
+    # (HTML + JSON + real PDF) so the analyst can download the signed report immediately.
+    if req.action == "validate":
+        try:
+            report_agent.generate(job_id, formats=["html", "json", "pdf"])
+        except Exception as exc:  # reporting must never break the validation record
+            import structlog
+
+            structlog.get_logger("horus.api").warning(
+                "post_validation_report_failed", job_id=job_id, error=str(exc)
+            )
     return ValidationResponse(
         job_id=job_id,
         action=req.action,
         new_status=str(new_status),
         is_final=new_status == JobStatus.COMPLETED,
     )
+
+
+@router.get("/{job_id}/download/{fmt}")
+async def download_report(job_id: str, fmt: str) -> FileResponse:
+    """Download a rendered report file (pdf | html | json), rendering it on demand if missing."""
+    if fmt not in _MEDIA:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported format '{fmt}'. Use one of: {', '.join(_MEDIA)}.",
+        )
+    if job_service.get_job(job_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found.")
+    if load_analysis(job_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Job {job_id} has no analysis yet — run the pipeline first.",
+        )
+    path = Path(settings.report_output_dir) / f"{job_id}.{fmt}"
+    if not path.exists():
+        report_agent.generate(job_id, formats=[fmt])
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not render the {fmt.upper()} report (see server logs).",
+        )
+    filename = f"horus-report-{job_id}.{fmt}"
+    return FileResponse(str(path), media_type=_MEDIA[fmt], filename=filename)

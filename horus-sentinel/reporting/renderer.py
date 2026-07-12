@@ -26,8 +26,9 @@ _env = Environment(
 
 
 def render_html(context: dict) -> str:
-    """Render the 9-section HTML report."""
-    return _env.get_template("report.html.j2").render(**context)
+    """Render the 9-section HTML report (Arabic RTL template when report_language == 'ar')."""
+    template = "report.ar.html.j2" if settings.report_language == "ar" else "report.html.j2"
+    return _env.get_template(template).render(**context)
 
 
 def render_json(context: dict) -> str:
@@ -35,8 +36,22 @@ def render_json(context: dict) -> str:
     return json.dumps(context, indent=2, default=str)
 
 
-def render_pdf(html: str) -> bytes | None:
-    """HTML→PDF via WeasyPrint. Returns None (non-fatal) if WeasyPrint is unavailable."""
+def render_pdf(html: str, context: dict | None = None) -> bytes | None:
+    """Produce a real PDF. Returns None (non-fatal) only if every path fails.
+
+    Order of preference:
+      1. Arabic report language → the pure-Python fpdf2 Arabic RTL generator (no system libs,
+         works on any OS). This is the primary path for the intelligence deliverable.
+      2. WeasyPrint HTML→PDF (English, or when explicitly available with native libs).
+    """
+    if context is not None and settings.report_language == "ar":
+        try:
+            from reporting.arabic_pdf import render_arabic_pdf
+
+            return render_arabic_pdf(context)
+        except Exception as exc:  # never let PDF failure break the pipeline
+            log.warning("arabic_pdf_failed_fallback_weasyprint", error=str(exc))
+
     try:
         from weasyprint import HTML  # lazy: heavy native deps on some platforms
     except Exception as exc:  # ImportError or missing system libs
@@ -69,7 +84,7 @@ def save_reports(job_id: str, context: dict, formats: list[str] | None = None) -
         written["json"] = str(p)
 
     if "pdf" in formats and html is not None:
-        pdf = render_pdf(html)
+        pdf = render_pdf(html, context)
         if pdf is not None:
             p = out_dir / f"{job_id}.pdf"
             p.write_bytes(pdf)

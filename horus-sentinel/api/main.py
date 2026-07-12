@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.demo import router as demo_router
 from api.routes import router as jobs_router
+from api.setup import router as setup_router
 from core.config import settings
 from core.db import init_db
 
@@ -50,16 +51,20 @@ app = FastAPI(
 
 app.include_router(jobs_router)
 app.include_router(demo_router)
+app.include_router(setup_router)
 
 
 @app.get("/health", tags=["system"])
-async def health() -> dict[str, str]:
-    """Liveness probe."""
+async def health() -> dict[str, object]:
+    """Liveness probe + brain backend snapshot."""
     return {
         "status": "ok",
         "service": "horus-sentinel",
         "env": settings.app_env,
+        "brain_backend": settings.brain_backend,
         "brain_model": settings.horus_model_name,
+        "hf_model_id": settings.hf_model_id,
+        "report_language": settings.report_language,
     }
 
 
