@@ -67,7 +67,9 @@ class HFProvider:
         if not settings.hf_token:
             return False
         if self.mode == "endpoint":
-            return bool(settings.hf_endpoint_url)
+            # A dedicated endpoint must be a real absolute URL. Guard against an empty or
+            # malformed value (e.g. a stray .env inline comment) creating a doomed transport.
+            return settings.hf_endpoint_url.strip().startswith(("http://", "https://"))
         return True
 
     async def reason(self, data: ReasoningInput) -> ReportCard:
