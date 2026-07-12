@@ -33,10 +33,21 @@ log = structlog.get_logger("horus.tool.webcrawl")
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 # Lightweight technology fingerprints from response headers / body markers.
 _TECH_MARKERS = {
-    "wordpress": "WordPress", "wp-content": "WordPress", "drupal": "Drupal",
-    "joomla": "Joomla", "laravel": "Laravel", "django": "Django", "react": "React",
-    "next.js": "Next.js", "nuxt": "Nuxt", "vue": "Vue.js", "angular": "Angular",
-    "jquery": "jQuery", "bootstrap": "Bootstrap", "nginx": "nginx", "apache": "Apache",
+    "wordpress": "WordPress",
+    "wp-content": "WordPress",
+    "drupal": "Drupal",
+    "joomla": "Joomla",
+    "laravel": "Laravel",
+    "django": "Django",
+    "react": "React",
+    "next.js": "Next.js",
+    "nuxt": "Nuxt",
+    "vue": "Vue.js",
+    "angular": "Angular",
+    "jquery": "jQuery",
+    "bootstrap": "Bootstrap",
+    "nginx": "nginx",
+    "apache": "Apache",
 }
 
 
@@ -88,31 +99,63 @@ class WebCrawlTool(IntelTool):
             await self._crawl(client, host, root, findings, evidence, emails, techs)
 
         for email in sorted(emails):
-            ev = Evidence(source=self.name, source_category=self.source_category,
-                          summary=f"Email harvested from {host}: {email}")
+            ev = Evidence(
+                source=self.name,
+                source_category=self.source_category,
+                summary=f"Email harvested from {host}: {email}",
+            )
             evidence.append(ev)
-            findings.append(Finding(
-                entity_kind=EntityKind.EMAIL, entity_value=email,
-                attributes={"discovery": "active_crawl"}, related_to=host,
-                relationship="MENTIONED_ON", evidence=[ev], produced_by=self.name))
+            findings.append(
+                Finding(
+                    entity_kind=EntityKind.EMAIL,
+                    entity_value=email,
+                    attributes={"discovery": "active_crawl"},
+                    related_to=host,
+                    relationship="MENTIONED_ON",
+                    evidence=[ev],
+                    produced_by=self.name,
+                )
+            )
         for tech in sorted(techs):
-            ev = Evidence(source=self.name, source_category=self.source_category,
-                          summary=f"Technology marker on {host}: {tech}")
+            ev = Evidence(
+                source=self.name,
+                source_category=self.source_category,
+                summary=f"Technology marker on {host}: {tech}",
+            )
             evidence.append(ev)
-            findings.append(Finding(
-                entity_kind=EntityKind.TECHNOLOGY, entity_value=tech,
-                attributes={"discovery": "active_crawl"}, related_to=host,
-                relationship="RUNS", evidence=[ev], produced_by=self.name))
+            findings.append(
+                Finding(
+                    entity_kind=EntityKind.TECHNOLOGY,
+                    entity_value=tech,
+                    attributes={"discovery": "active_crawl"},
+                    related_to=host,
+                    relationship="RUNS",
+                    evidence=[ev],
+                    produced_by=self.name,
+                )
+            )
 
-        log.info("web_crawl_complete", host=host,
-                 endpoints=sum(1 for f in findings if f.entity_kind == EntityKind.ENDPOINT),
-                 emails=len(emails), techs=len(techs))
-        return ToolResult(tool=self.name, source_category=self.source_category,
-                          findings=findings, evidence=evidence)
+        log.info(
+            "web_crawl_complete",
+            host=host,
+            endpoints=sum(1 for f in findings if f.entity_kind == EntityKind.ENDPOINT),
+            emails=len(emails),
+            techs=len(techs),
+        )
+        return ToolResult(
+            tool=self.name,
+            source_category=self.source_category,
+            findings=findings,
+            evidence=evidence,
+        )
 
     async def _load_robots(
-        self, client: httpx.AsyncClient, host: str, root: str,
-        findings: list[Finding], evidence: list[Evidence],
+        self,
+        client: httpx.AsyncClient,
+        host: str,
+        root: str,
+        findings: list[Finding],
+        evidence: list[Evidence],
     ) -> RobotFileParser:
         """Fetch + parse robots.txt so ``can_fetch`` gates every subsequent request.
 
@@ -131,20 +174,35 @@ class WebCrawlTool(IntelTool):
             pass
         rp.parse(text.splitlines() if text else [])
         ev = Evidence(
-            source=self.name, source_category=self.source_category,
-            summary="Loaded robots.txt; honouring can_fetch() before every request.")
+            source=self.name,
+            source_category=self.source_category,
+            summary="Loaded robots.txt; honouring can_fetch() before every request.",
+        )
         evidence.append(ev)
         if text:
-            findings.append(Finding(
-                entity_kind=EntityKind.ENDPOINT, entity_value=url,
-                attributes={"source": "robots.txt"}, related_to=host,
-                relationship="HAS_ENDPOINT", evidence=[ev], produced_by=self.name))
+            findings.append(
+                Finding(
+                    entity_kind=EntityKind.ENDPOINT,
+                    entity_value=url,
+                    attributes={"source": "robots.txt"},
+                    related_to=host,
+                    relationship="HAS_ENDPOINT",
+                    evidence=[ev],
+                    produced_by=self.name,
+                )
+            )
             for m in re.finditer(r"(?i)Disallow:\s*(\S+)", text):
-                findings.append(Finding(
-                    entity_kind=EntityKind.ENDPOINT, entity_value=urljoin(root, m.group(1)),
-                    attributes={"source": "robots-disallow", "note": "recorded, not crawled"},
-                    related_to=host, relationship="HAS_ENDPOINT", evidence=[ev],
-                    produced_by=self.name))
+                findings.append(
+                    Finding(
+                        entity_kind=EntityKind.ENDPOINT,
+                        entity_value=urljoin(root, m.group(1)),
+                        attributes={"source": "robots-disallow", "note": "recorded, not crawled"},
+                        related_to=host,
+                        relationship="HAS_ENDPOINT",
+                        evidence=[ev],
+                        produced_by=self.name,
+                    )
+                )
         return rp
 
     def _allowed(self, url: str) -> bool:
@@ -161,8 +219,12 @@ class WebCrawlTool(IntelTool):
         return ok
 
     async def _fetch_wellknown(
-        self, client: httpx.AsyncClient, host: str, root: str,
-        findings: list[Finding], evidence: list[Evidence],
+        self,
+        client: httpx.AsyncClient,
+        host: str,
+        root: str,
+        findings: list[Finding],
+        evidence: list[Evidence],
     ) -> None:
         """Fetch sitemap.xml — a classic content-discovery seed (robots already fetched)."""
         for path in ("sitemap.xml",):
@@ -175,26 +237,48 @@ class WebCrawlTool(IntelTool):
                 continue
             if resp.status_code >= 400:
                 continue
-            ev = Evidence(source=self.name, source_category=self.source_category,
-                          summary=f"Fetched {path} ({resp.status_code}, {len(resp.text)} bytes)")
+            ev = Evidence(
+                source=self.name,
+                source_category=self.source_category,
+                summary=f"Fetched {path} ({resp.status_code}, {len(resp.text)} bytes)",
+            )
             evidence.append(ev)
-            findings.append(Finding(
-                entity_kind=EntityKind.ENDPOINT, entity_value=url,
-                attributes={"status": resp.status_code, "source": path}, related_to=host,
-                relationship="HAS_ENDPOINT", evidence=[ev], produced_by=self.name))
+            findings.append(
+                Finding(
+                    entity_kind=EntityKind.ENDPOINT,
+                    entity_value=url,
+                    attributes={"status": resp.status_code, "source": path},
+                    related_to=host,
+                    relationship="HAS_ENDPOINT",
+                    evidence=[ev],
+                    produced_by=self.name,
+                )
+            )
             # Pull Disallow paths from robots as extra endpoints to note.
             if path == "robots.txt":
                 for m in re.finditer(r"(?i)Disallow:\s*(\S+)", resp.text):
                     disallowed = urljoin(root, m.group(1))
-                    findings.append(Finding(
-                        entity_kind=EntityKind.ENDPOINT, entity_value=disallowed,
-                        attributes={"source": "robots-disallow"}, related_to=host,
-                        relationship="HAS_ENDPOINT", evidence=[ev], produced_by=self.name))
+                    findings.append(
+                        Finding(
+                            entity_kind=EntityKind.ENDPOINT,
+                            entity_value=disallowed,
+                            attributes={"source": "robots-disallow"},
+                            related_to=host,
+                            relationship="HAS_ENDPOINT",
+                            evidence=[ev],
+                            produced_by=self.name,
+                        )
+                    )
 
     async def _crawl(
-        self, client: httpx.AsyncClient, host: str, root: str,
-        findings: list[Finding], evidence: list[Evidence],
-        emails: set[str], techs: set[str],
+        self,
+        client: httpx.AsyncClient,
+        host: str,
+        root: str,
+        findings: list[Finding],
+        evidence: list[Evidence],
+        emails: set[str],
+        techs: set[str],
     ) -> None:
         """BFS crawl within the page/depth budget, same host only."""
         seen: set[str] = set()
@@ -212,14 +296,28 @@ class WebCrawlTool(IntelTool):
                 continue
             pages += 1
             ctype = resp.headers.get("content-type", "")
-            ev = Evidence(source=self.name, source_category=self.source_category,
-                          summary=f"Crawled {url} ({resp.status_code}, {ctype.split(';')[0]})")
+            ev = Evidence(
+                source=self.name,
+                source_category=self.source_category,
+                summary=f"Crawled {url} ({resp.status_code}, {ctype.split(';')[0]})",
+            )
             evidence.append(ev)
-            findings.append(Finding(
-                entity_kind=EntityKind.ENDPOINT, entity_value=url,
-                attributes={"status": resp.status_code, "content_type": ctype.split(";")[0],
-                            "depth": depth, "forms": 0}, related_to=host,
-                relationship="HAS_ENDPOINT", evidence=[ev], produced_by=self.name))
+            findings.append(
+                Finding(
+                    entity_kind=EntityKind.ENDPOINT,
+                    entity_value=url,
+                    attributes={
+                        "status": resp.status_code,
+                        "content_type": ctype.split(";")[0],
+                        "depth": depth,
+                        "forms": 0,
+                    },
+                    related_to=host,
+                    relationship="HAS_ENDPOINT",
+                    evidence=[ev],
+                    produced_by=self.name,
+                )
+            )
             if "html" not in ctype:
                 continue
             body = resp.text
@@ -234,8 +332,11 @@ class WebCrawlTool(IntelTool):
                 pass
             if with_forms:
                 findings[-1].attributes["forms"] = with_forms
-                ev2 = Evidence(source=self.name, source_category=self.source_category,
-                               summary=f"{with_forms} form(s) on {url} (input surface)")
+                ev2 = Evidence(
+                    source=self.name,
+                    source_category=self.source_category,
+                    summary=f"{with_forms} form(s) on {url} (input surface)",
+                )
                 evidence.append(ev2)
             for href in parser.links:
                 nxt = urljoin(url, href)
@@ -245,14 +346,12 @@ class WebCrawlTool(IntelTool):
                     if clean not in seen:
                         queue.append((clean, depth + 1))
 
-    async def _polite_get(
-        self, client: httpx.AsyncClient, url: str
-    ) -> httpx.Response | None:
+    async def _polite_get(self, client: httpx.AsyncClient, url: str) -> httpx.Response | None:
         """GET with exponential backoff on 429/503 (never behave like a DoS)."""
         import asyncio
 
         delay = 0.5
-        for attempt in range(3):
+        for _attempt in range(3):
             try:
                 resp = await client.get(url)
             except httpx.HTTPError:

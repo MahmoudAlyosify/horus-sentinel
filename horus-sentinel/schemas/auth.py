@@ -53,9 +53,7 @@ class AuthContext(BaseModel):
 
         self._assert_subject_in_scope(source_category, subject)
 
-    def _assert_active_authorized(
-        self, source_category: SourceCategory, subject: Subject
-    ) -> None:
+    def _assert_active_authorized(self, source_category: SourceCategory, subject: Subject) -> None:
         """Active reconnaissance requires an explicit authorization flag + an in-scope target."""
         if not self.roe.active_authorized:
             raise AuthorizationError(
@@ -79,9 +77,10 @@ class AuthContext(BaseModel):
         scoped = {SourceCategory.WEB_INFRA, *ACTIVE_SOURCE_CATEGORIES}
         if source_category not in scoped:
             return
-        if subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION) and not self._target_in_scope(
-            subject
-        ):
+        if subject.type in (
+            SubjectType.DOMAIN,
+            SubjectType.ORGANIZATION,
+        ) and not self._target_in_scope(subject):
             raise AuthorizationError(
                 f"Subject '{subject.value}' is not within in_scope_domains for "
                 f"'{source_category.value}' collection."

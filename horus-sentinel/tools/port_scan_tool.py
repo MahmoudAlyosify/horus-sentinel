@@ -29,11 +29,33 @@ log = structlog.get_logger("horus.tool.portscan")
 
 # Well-known service labels for the ports we scan (best-effort identity before banner).
 _PORT_SERVICE = {
-    21: "ftp", 22: "ssh", 23: "telnet", 25: "smtp", 53: "dns", 80: "http", 110: "pop3",
-    111: "rpcbind", 135: "msrpc", 139: "netbios-ssn", 143: "imap", 443: "https", 445: "smb",
-    993: "imaps", 995: "pop3s", 1723: "pptp", 3306: "mysql", 3389: "rdp", 5432: "postgresql",
-    5900: "vnc", 6379: "redis", 8080: "http-alt", 8443: "https-alt", 8000: "http-alt",
-    8888: "http-alt", 9200: "elasticsearch", 27017: "mongodb",
+    21: "ftp",
+    22: "ssh",
+    23: "telnet",
+    25: "smtp",
+    53: "dns",
+    80: "http",
+    110: "pop3",
+    111: "rpcbind",
+    135: "msrpc",
+    139: "netbios-ssn",
+    143: "imap",
+    443: "https",
+    445: "smb",
+    993: "imaps",
+    995: "pop3s",
+    1723: "pptp",
+    3306: "mysql",
+    3389: "rdp",
+    5432: "postgresql",
+    5900: "vnc",
+    6379: "redis",
+    8080: "http-alt",
+    8443: "https-alt",
+    8000: "http-alt",
+    8888: "http-alt",
+    9200: "elasticsearch",
+    27017: "mongodb",
 }
 _HTTP_PORTS = {80, 8080, 8000, 8888}
 _TLS_PORTS = {443, 8443}
@@ -73,8 +95,13 @@ class PortScanTool(IntelTool):
                     Finding(
                         entity_kind=EntityKind.PORT,
                         entity_value=svc_value,
-                        attributes={"port": port, "service": service, "state": "open",
-                                    "internet_facing": True, "banner": banner or ""},
+                        attributes={
+                            "port": port,
+                            "service": service,
+                            "state": "open",
+                            "internet_facing": True,
+                            "banner": banner or "",
+                        },
                         related_to=ip,
                         relationship="HAS_OPEN_PORT",
                         evidence=[ev],
@@ -85,8 +112,12 @@ class PortScanTool(IntelTool):
                     Finding(
                         entity_kind=EntityKind.SERVICE,
                         entity_value=svc_value,
-                        attributes={"port": port, "protocol": service, "internet_facing": True,
-                                    "banner": banner or ""},
+                        attributes={
+                            "port": port,
+                            "protocol": service,
+                            "internet_facing": True,
+                            "banner": banner or "",
+                        },
                         related_to=ip,
                         relationship="EXPOSES",
                         evidence=[ev],
@@ -95,8 +126,10 @@ class PortScanTool(IntelTool):
                 )
             log.info("port_scan_host", ip=ip, scanned=len(ports), open=len(open_ports))
         return ToolResult(
-            tool=self.name, source_category=self.source_category,
-            findings=findings, evidence=evidence,
+            tool=self.name,
+            source_category=self.source_category,
+            findings=findings,
+            evidence=evidence,
         )
 
     def _targets(self, ctx: AuthContext, subject: Subject) -> list[str]:
@@ -113,15 +146,13 @@ class PortScanTool(IntelTool):
                 out.append(int(tok))
         return out
 
-    async def _probe(
-        self, sem: asyncio.Semaphore, ip: str, port: int
-    ) -> tuple[int, str] | None:
+    async def _probe(self, sem: asyncio.Semaphore, ip: str, port: int) -> tuple[int, str] | None:
         """Connect to ip:port; if open, grab a short banner. Returns (port, banner) or None."""
         async with sem:
             try:
                 fut = asyncio.open_connection(ip, port)
                 reader, writer = await asyncio.wait_for(fut, timeout=settings.active_scan_timeout_s)
-            except (OSError, asyncio.TimeoutError):
+            except (TimeoutError, OSError):
                 return None
             banner = ""
             try:
@@ -145,7 +176,7 @@ class PortScanTool(IntelTool):
                 await writer.drain()
         try:
             data = await asyncio.wait_for(reader.read(n), timeout=settings.active_scan_timeout_s)
-        except (asyncio.TimeoutError, OSError):
+        except (TimeoutError, OSError):
             return ""
         text = data.decode("latin-1", errors="replace").strip()
         # For HTTP, keep just the Server header line if present.

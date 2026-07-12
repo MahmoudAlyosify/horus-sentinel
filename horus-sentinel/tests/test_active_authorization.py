@@ -20,14 +20,14 @@ def _exp() -> datetime:
 
 
 def _roe(**kw) -> RoE:
-    base = dict(
-        subject="mytarget.com",
-        enabled_sources=[SourceCategory.ACTIVE_RECON, SourceCategory.WEB_CRAWL],
-        in_scope_domains=["mytarget.com"],
-        active_authorized=True,
-        signed_by="operator",
-        expires_at=_exp(),
-    )
+    base = {
+        "subject": "mytarget.com",
+        "enabled_sources": [SourceCategory.ACTIVE_RECON, SourceCategory.WEB_CRAWL],
+        "in_scope_domains": ["mytarget.com"],
+        "active_authorized": True,
+        "signed_by": "operator",
+        "expires_at": _exp(),
+    }
     base.update(kw)
     return RoE(**base)
 
@@ -85,8 +85,11 @@ def test_passive_still_works_unchanged():
         signed_by="a",
         expires_at=_exp(),
     )
-    ctx = authorization_engine.authorize("j7", Subject(type=SubjectType.DOMAIN, value="example.com"), roe)
+    ctx = authorization_engine.authorize(
+        "j7", Subject(type=SubjectType.DOMAIN, value="example.com"), roe
+    )
     ctx.assert_allows(
-        Classification.PASSIVE, SourceCategory.PUBLIC_RECORDS,
+        Classification.PASSIVE,
+        SourceCategory.PUBLIC_RECORDS,
         Subject(type=SubjectType.DOMAIN, value="example.com"),
     )

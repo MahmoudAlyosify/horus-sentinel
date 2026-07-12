@@ -4,9 +4,8 @@ Everything runs against local fixtures (a localhost listener, a mocked HTTP host
 resolver) — no real external target is ever touched.
 """
 
-from datetime import datetime, timedelta
-
 import asyncio
+from datetime import datetime, timedelta
 
 import httpx
 import pytest
@@ -50,6 +49,7 @@ _SUBJECT = Subject(type=SubjectType.DOMAIN, value="example.com")
 
 async def test_port_scan_finds_open_port_on_localhost():
     job = "portjob1"
+
     # A real listener on an ephemeral port; the tool should detect it open.
     async def handler(reader, writer):
         writer.write(b"HORUS-TEST-BANNER\r\n")
@@ -114,14 +114,22 @@ async def test_web_crawl_respects_robots_and_extracts():
             return_value=httpx.Response(200, text="User-agent: *\nDisallow: /secret\n")
         )
         router.get("https://example.com/sitemap.xml").mock(return_value=httpx.Response(404))
-        router.get(root).mock(return_value=httpx.Response(
-            200, headers={"content-type": "text/html", "server": "nginx"},
-            text='<html><a href="/page">p</a><a href="/secret">s</a> '
-                 'contact hi@example.com</html>'))
-        router.get("https://example.com/page").mock(return_value=httpx.Response(
-            200, headers={"content-type": "text/html"}, text="<html>ok</html>"))
+        router.get(root).mock(
+            return_value=httpx.Response(
+                200,
+                headers={"content-type": "text/html", "server": "nginx"},
+                text='<html><a href="/page">p</a><a href="/secret">s</a> '
+                "contact hi@example.com</html>",
+            )
+        )
+        router.get("https://example.com/page").mock(
+            return_value=httpx.Response(
+                200, headers={"content-type": "text/html"}, text="<html>ok</html>"
+            )
+        )
         secret = router.get("https://example.com/secret").mock(
-            return_value=httpx.Response(200, text="secret"))
+            return_value=httpx.Response(200, text="secret")
+        )
 
         result = await WebCrawlTool()(_SUBJECT, _ctx(job))
 
@@ -131,7 +139,9 @@ async def test_web_crawl_respects_robots_and_extracts():
     assert "https://example.com/" in values
     assert "https://example.com/page" in values
     assert EntityKind.EMAIL in kinds
-    assert "nginx" in {f.entity_value for f in result.findings if f.entity_kind == EntityKind.TECHNOLOGY}
+    assert "nginx" in {
+        f.entity_value for f in result.findings if f.entity_kind == EntityKind.TECHNOLOGY
+    }
     # robots.txt disallowed /secret — it must NOT have been fetched
     assert not secret.called
     # but the disallowed path is *recorded* as intelligence (noted, not crawled)

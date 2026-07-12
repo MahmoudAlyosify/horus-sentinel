@@ -28,6 +28,34 @@ work machine. Two paths: a **fast MVP** (no infra, verifies everything in minute
 > already-public grounded facts to Hugging Face's cloud. For a fully sovereign deployment set
 > `BRAIN_BACKEND=ollama` — the same report, nothing leaves your infrastructure.
 
+### Authorized active reconnaissance (offensive mode) — GATED
+
+The platform can run **active reconnaissance** (it sends traffic to the target): TCP port
+scan + service/banner fingerprint, active DNS/subdomain brute-force, and a **compliant** web
+crawler/scraper (honours `robots.txt` before every request, backs off on 429/503). This is
+**discovery/enumeration only — no exploitation, no auth attempts, no payloads.**
+
+It is gated hard by the Authorization Engine and runs **only** when the RoE has
+`active_authorized: true` **and** the target is a domain listed in `in_scope_domains`. Any
+out-of-scope or unauthorized active request is refused with **403** — proven by
+`tests/test_active_authorization.py`. In the UI (OSINT-Recon), tick **"استطلاع فعّال هجومي /
+Active offensive recon"** to add the active sources to the generated RoE. Point it only at a
+domain **you own or are authorized to test** (e.g. your other lab system).
+
+New RoE field:
+```json
+{"subject":"mysite.com","enabled_sources":["active_recon","web_crawl","public_records"],
+ "in_scope_domains":["mysite.com"],"active_authorized":true,"signed_by":"op","expires_at":"..."}
+```
+Active-recon knobs (all polite defaults) live in `.env` / `core/config.py`:
+`ACTIVE_SCAN_PORTS`, `ACTIVE_SCAN_TIMEOUT_S`, `ACTIVE_DNS_WORDLIST`, `ACTIVE_CRAWL_MAX_PAGES`, …
+
+### Language (Arabic / English)
+
+Toggle from the header (**EN / ع**) or `POST /setup/language {"language":"ar"|"en"}`. It
+switches the whole UI (RTL/LTR), the model's narrative language, and the report language.
+Default is Arabic (`REPORT_LANGUAGE=ar`).
+
 ---
 
 ## 0. Prerequisites

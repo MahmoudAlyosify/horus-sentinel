@@ -180,14 +180,18 @@ class AnalysisAgent:
             return "Internet-facing service enlarges the attack surface."
         if kind == EntityKind.ENDPOINT.value:
             forms = attrs.get("forms", 0)
-            return (
-                "Discovered web endpoint (active crawl)"
-                + (f" with {forms} input form(s) — an input/attack surface." if forms
-                   else " — expands the mapped surface.")
+            return "Discovered web endpoint (active crawl)" + (
+                f" with {forms} input form(s) — an input/attack surface."
+                if forms
+                else " — expands the mapped surface."
             )
         if kind == EntityKind.SUBDOMAIN.value:
             disc = attrs.get("discovery")
-            extra = " (active brute-force)" if disc == "active_bruteforce" else " (certificate transparency)"
+            extra = (
+                " (active brute-force)"
+                if disc == "active_bruteforce"
+                else " (certificate transparency)"
+            )
             return f"Discoverable subdomain{extra} — potential entry point."
         if kind == EntityKind.INDICATOR.value:
             return "Reputation signal indicates adjacency to known-malicious infrastructure."
@@ -250,9 +254,7 @@ class AnalysisAgent:
             if d["kind"] == EntityKind.PORT.value
         ]
         if open_ports:
-            summary = ", ".join(
-                f"{v} ({a.get('service', '?')})" for v, a in open_ports[:12]
-            )
+            summary = ", ".join(f"{v} ({a.get('service', '?')})" for v, a in open_ports[:12])
             facts.append(
                 f"Active recon found {len(open_ports)} open port(s) — live attack surface: {summary}"
             )

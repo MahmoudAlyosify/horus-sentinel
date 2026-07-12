@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import FileResponse
 
+from agents.report_agent import report_agent
 from api.dto import (
     EnqueueResponse,
     JobCreatedResponse,
@@ -21,7 +22,6 @@ from api.dto import (
     ValidationRequest,
     ValidationResponse,
 )
-from agents.report_agent import report_agent
 from core.analysis_store import load_analysis
 from core.config import settings
 from core.jobs import job_service
@@ -156,7 +156,9 @@ async def download_report(job_id: str, fmt: str) -> FileResponse:
             detail=f"Unsupported format '{fmt}'. Use one of: {', '.join(_MEDIA)}.",
         )
     if job_service.get_job(job_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found."
+        )
     if load_analysis(job_id) is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

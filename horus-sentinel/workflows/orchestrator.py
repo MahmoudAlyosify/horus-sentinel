@@ -85,9 +85,15 @@ class Orchestrator:
             )
         # active_recon (GATED): active scanning/enumeration/crawl, only when the RoE authorizes
         # active ops on an in-scope target. Runs after osint so it inherits resolved IPs.
-        if subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION) and roe.has_active_sources():
+        if (
+            subject.type in (SubjectType.DOMAIN, SubjectType.ORGANIZATION)
+            and roe.has_active_sources()
+        ):
             stages.append(
-                ("active_recon", self._collector(ActiveReconAgent(), subject, auth, summary, "active_recon"))
+                (
+                    "active_recon",
+                    self._collector(ActiveReconAgent(), subject, auth, summary, "active_recon"),
+                )
             )
         # threat_intel converges last — it enriches whatever the eyes discovered.
         if roe.allows_source(SourceCategory.THREAT_INTEL):
