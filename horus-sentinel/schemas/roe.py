@@ -6,10 +6,14 @@ See master plan Part 2.2 (design invariants) and Phase 1.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class SourceCategory(StrEnum):
@@ -68,12 +72,15 @@ class RoE(BaseModel):
         ),
     )
     signed_by: str = Field(..., description="Analyst who authorized this assessment.")
-    issued_at: datetime = Field(default_factory=datetime.utcnow)
+    issued_at: datetime = Field(default_factory=now_utc)
     expires_at: datetime = Field(..., description="RoE is invalid after this time.")
 
     def is_valid_now(self) -> bool:
         """True if the RoE has not expired."""
-        return datetime.utcnow() < self.expires_at
+        now = now_utc()
+        if self.expires_at.tzinfo is None:
+            now = now.replace(tzinfo=None)
+        return now < self.expires_at
 
     def allows_source(self, category: SourceCategory) -> bool:
         """True if this RoE permits the given source category."""
