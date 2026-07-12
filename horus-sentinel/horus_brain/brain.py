@@ -46,6 +46,23 @@ class Brain:
         # Nothing model-authored — return the last grounded offline card (always present).
         return last if last is not None else await self._offline_only(data)
 
+    async def chat(self, query: str, language: str | None = None) -> tuple[str, str]:
+        """Free-form conversational answer from the first reachable transport.
+
+        Walks the same backend-selected transport chain as ``reason`` (HF online → Ollama),
+        but returns the model's direct answer to a question rather than a grounded Report Card.
+        Returns ``(answer, generated_by)``; ``("", "unavailable")`` if no transport answered.
+        """
+        lang = language or settings.report_language
+        for transport in self._transports():
+            chat_fn = getattr(transport, "chat", None)
+            if chat_fn is None:
+                continue
+            answer = await chat_fn(query, lang)
+            if answer:
+                return answer, getattr(transport, "name", "?")
+        return "", "unavailable"
+
     async def health(self) -> dict[str, bool]:
         """Reachability of each configured transport (used by /health and setup status)."""
         out: dict[str, bool] = {}

@@ -75,6 +75,9 @@
   .bubble{margin:8px 0;padding:10px 12px;border-radius:10px;max-width:85%}
   html[dir=rtl] .bubble.user{margin-right:auto}html[dir=ltr] .bubble.user{margin-left:auto}
   .bubble.user{background:#173154}.bubble.horus{background:#12233c;border:1px solid var(--line)}
+  .bubble .answer{white-space:pre-wrap}
+  .bubble .note{margin-top:8px;font-size:10px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+  .bubble.thinking{opacity:.7;font-style:italic}
   .overlay{position:fixed;inset:0;background:rgba(3,8,18,.75);display:flex;align-items:center;justify-content:center;z-index:50}
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(520px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.5)}
   .modal h2{margin:0 0 6px;font-size:19px}
@@ -199,8 +202,10 @@ const T={
   demo_hint:"موضوع آمن مُصرّح به مسبقًا (سيناء)، يعمل دون اتصال. نقرة ← تقرير كامل.",
   tab_report:"التقرير",tab_graph:"رسم المعرفة",tab_custody:"سلسلة الحيازة",
   empty_report:"أرسِل موضوعًا أو شغّل العرض الإرشادي لعرض التقرير.",geo_title:"استخبارات جيوسياسية — استدلال حورس",
-  geo_greeting:"أنا حورس. اسألني عن منطقة + إطار زمني (مثل «سيناء 2018»).",geo_send:"إرسال",
+  geo_greeting:"أنا حورس. اسألني أي سؤال استخباراتي أو جيوسياسي.",geo_send:"إرسال",
   geo_hint:"هذا الوضع يقابل محادثة Horus-OSINT الأصلية.",
+  geo_thinking:"…حورس يفكّر",geo_error:"تعذّر الوصول إلى النموذج. حاول مرة أخرى.",
+  geo_note:"استدلال النموذج — غير مُسنَد إلى المصادر المؤكدة",
   entities:"كيانات",top_band:"أعلى نطاق",critical_cves:"ثغرات حرجة",findings:"نتائج",
   exec_summary:"الملخص التنفيذي",geopolitical:"السياق",threat_assessment:"تقييم التهديد",prioritized:"النتائج ذات الأولوية",
   download_pdf:"⬇ تحميل تقرير PDF",reasoning_by:"التحليل بواسطة",recommendation:"التوصية",framework:"الإطار المرجعي",none:"لا توجد.",
@@ -220,8 +225,10 @@ const T={
   demo_hint:"Pre-authorized safe subject (Sinai), fully offline. One click → full report.",
   tab_report:"Report",tab_graph:"Knowledge Graph",tab_custody:"Chain of Custody",
   empty_report:"Submit a subject or run the Guided Demo to see the report.",geo_title:"Geo-Intel — HORUS reasoning",
-  geo_greeting:"I am HORUS. Ask me about a region + timeframe (e.g. \"Sinai 2018\").",geo_send:"Send",
+  geo_greeting:"I am HORUS. Ask me any intelligence or geopolitical question.",geo_send:"Send",
   geo_hint:"This view maps to the original Horus-OSINT chat.",
+  geo_thinking:"…HORUS is thinking",geo_error:"Could not reach the model. Please try again.",
+  geo_note:"model reasoning — not corpus-grounded",
   entities:"Entities",top_band:"Top band",critical_cves:"Critical CVEs",findings:"Findings",
   exec_summary:"Executive Summary",geopolitical:"Context",threat_assessment:"Threat Assessment",prioritized:"Prioritized Findings",
   download_pdf:"⬇ Download PDF report",reasoning_by:"Reasoning by",recommendation:"Recommendation",framework:"Framework",none:"None.",
@@ -240,7 +247,7 @@ function applyLang(lang){
   document.documentElement.dir=(lang==="ar")?"rtl":"ltr";
   document.getElementById("langBtn").textContent=(lang==="ar")?"EN":"ع";
   document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.dataset.i18n);});
-  document.getElementById("geoInput").placeholder=(lang==="ar")?"قيّم سيناء 2018–2019":"Assess Sinai 2018–2019";
+  document.getElementById("geoInput").placeholder=(lang==="ar")?"اكتب سؤالك لحورس…":"Ask HORUS a question…";
   refreshBrain();
 }
 async function toggleLang(){
@@ -364,13 +371,27 @@ function renderGraph(graph){
            {selector:'edge',style:{'width':1,'line-color':'#1d2c47','label':'data(label)','font-size':'6px','color':'#93a6c4','target-arrow-shape':'triangle','target-arrow-color':'#1d2c47','curve-style':'bezier'}}],
     layout:{name:'cose',animate:false}});
 }
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 async function geoAsk(){
   const inp=document.getElementById('geoInput'); const q=inp.value.trim(); if(!q) return;
   const chat=document.getElementById('chat');
-  chat.innerHTML+=`<div class="bubble user">${q}</div>`; inp.value='';
-  const r=await fetch(API+'/demo',{method:'POST'}); const d=await r.json();
-  const rep=await (await fetch(API+'/jobs/'+d.job_id+'/report')).json();
-  chat.innerHTML+=`<div class="bubble horus"><b>${d.subject}</b> — ${(BAND[LANG][rep.report_card.top_band]||rep.report_card.top_band)}.<br>${rep.report_card.geopolitical_context||rep.report_card.executive_summary}</div>`;
+  chat.innerHTML+=`<div class="bubble user">${escapeHtml(q)}</div>`; inp.value='';
+  const thinking=document.createElement('div');
+  thinking.className='bubble horus thinking'; thinking.textContent=t('geo_thinking');
+  chat.appendChild(thinking); chat.scrollTop=chat.scrollHeight;
+  try{
+    const r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,language:LANG})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    thinking.remove();
+    chat.innerHTML+=`<div class="bubble horus"><div class="answer">${escapeHtml(d.answer)}</div>`+
+      `<div class="note">${t('geo_note')} · <code>${escapeHtml(d.generated_by||'')}</code></div></div>`;
+  }catch(e){
+    thinking.remove();
+    chat.innerHTML+=`<div class="bubble horus">${t('geo_error')}</div>`;
+  }
   chat.scrollTop=chat.scrollHeight;
 }
 

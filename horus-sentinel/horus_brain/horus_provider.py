@@ -19,6 +19,7 @@ from core.config import settings
 from horus_brain.prompting import (
     ReasoningInput,
     build_intel_prompt,
+    chat_system_prompt,
     offline_sections,
     split_sections,
 )
@@ -76,6 +77,29 @@ class HorusReasoningProvider:
                 return str(resp.json().get("response", "")).strip() or None
         except (httpx.HTTPError, ValueError) as exc:
             log.info("ollama_unreachable", error=str(exc), endpoint=self.endpoint)
+            return None
+
+    async def chat(self, query: str, language: str) -> str | None:
+        """Free-form conversational answer from the self-hosted model (None if unreachable).
+
+        The conversational counterpart to ``reason``: no grounded report, just the fine-tuned
+        model answering the analyst's question directly (the 'Horus-OSINT chat').
+        """
+        payload = {
+            "model": self.model,
+            "prompt": query,
+            "system": chat_system_prompt(language),
+            "stream": False,
+            "options": {"temperature": settings.ollama_temperature},
+        }
+        timeout = httpx.Timeout(settings.ollama_timeout_s, connect=5.0)
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                resp = await client.post(self.endpoint, json=payload)
+                resp.raise_for_status()
+                return str(resp.json().get("response", "")).strip() or None
+        except (httpx.HTTPError, ValueError) as exc:
+            log.info("ollama_chat_unreachable", error=str(exc), endpoint=self.endpoint)
             return None
 
     async def health(self) -> bool:

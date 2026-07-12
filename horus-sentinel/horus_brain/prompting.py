@@ -55,6 +55,24 @@ def system_prompt(language: str) -> str:
     return _SYSTEM_AR if language == "ar" else _SYSTEM_EN
 
 
+_CHAT_SYSTEM_EN = (
+    "You are HORUS, a senior geopolitical and open-source intelligence analyst. Answer the "
+    "user's question directly, concisely, and professionally in English. State uncertainty "
+    "plainly — if you are not sure, say so. Do not fabricate specific figures, dates, or "
+    "sources you are not confident about."
+)
+_CHAT_SYSTEM_AR = (
+    "أنت حورس، محلل استخبارات جيوسياسية ومفتوحة المصدر خبير. أجب عن سؤال المستخدم مباشرةً "
+    "وبإيجاز ومهنية باللغة العربية الفصحى. وضّح درجة اليقين بصراحة — وإن لم تكن متأكدًا فقل "
+    "ذلك. لا تختلق أرقامًا أو تواريخ أو مصادر لست واثقًا منها."
+)
+
+
+def chat_system_prompt(language: str) -> str:
+    """System message for the free-form conversational (chat) mode."""
+    return _CHAT_SYSTEM_AR if language == "ar" else _CHAT_SYSTEM_EN
+
+
 def build_intel_prompt(data: ReasoningInput, language: str = "ar") -> str:
     """Structured, grounded instruction asking for the four narrative sections.
 

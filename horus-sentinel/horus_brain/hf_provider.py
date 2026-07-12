@@ -25,6 +25,7 @@ from core.config import settings
 from horus_brain.prompting import (
     ReasoningInput,
     build_intel_prompt,
+    chat_system_prompt,
     offline_sections,
     split_sections,
     system_prompt,
@@ -118,6 +119,31 @@ class HFProvider:
                 return _extract_text(resp.json())
         except (httpx.HTTPError, ValueError) as exc:
             log.info("hf_unreachable", error=str(exc), endpoint=self.endpoint, mode=self.mode)
+            return None
+
+    async def chat(self, query: str, language: str) -> str | None:
+        """Free-form conversational answer from the online model (None on any error)."""
+        if not self.is_configured():
+            return None
+        prompt = _llama3_chat(chat_system_prompt(language), query)
+        payload: dict[str, Any] = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": settings.hf_max_new_tokens,
+                "temperature": settings.ollama_temperature,
+                "return_full_text": False,
+            },
+            "options": {"wait_for_model": True},
+        }
+        headers = {"Authorization": f"Bearer {settings.hf_token}"}
+        timeout = httpx.Timeout(settings.hf_timeout_s, connect=10.0)
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                resp = await client.post(self.endpoint, json=payload, headers=headers)
+                resp.raise_for_status()
+                return _extract_text(resp.json())
+        except (httpx.HTTPError, ValueError) as exc:
+            log.info("hf_chat_unreachable", error=str(exc), endpoint=self.endpoint, mode=self.mode)
             return None
 
     async def health(self) -> bool:
