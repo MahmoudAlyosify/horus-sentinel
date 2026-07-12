@@ -1,605 +1,528 @@
-# HORUS SENTINEL
-## An Autonomous, Multi-Agent OSINT & Threat-Intelligence Platform
-### Master Specification & Ground-Up Build Plan — v1.0
+# HORUS SENTINEL — Master Specification & Build Plan
+## An Authorized Offensive-Reconnaissance & Intelligence Platform (Educational)
+### v3.0 — The Constitution (consolidated & authoritative)
 
 > **Competition:** ITC-Egypt 2026 · Track 3 — Intelligent Software Systems · Air Defence College (Egyptian Military)
-> **Project ID:** ITC-2026-T3-0726
-> **Supervisor:** Sarah Mohammed Taha Khater
+> **Project ID:** ITC-2026-T3-0726 · **Supervisor:** Sarah Mohammed Taha Khater
 > **Team:** 3 members (Mahmoud, Mirna, Sondos) — waterfall, whole team on each task
 > **Foundational asset:** the award-winning fine-tuned model `mahmoudalyosify/Horus-OSINT` (Llama-3-8B, QLoRA)
-> **Strategic goal:** move from rank #20 to a **1st / 2nd place** finish
-> **Chosen direction:** **Path C** — a *defensive, passive, OSINT-driven* threat-intelligence platform that keeps ARGUS's multi-agent architecture but points it at the domain the fine-tuned model is genuinely expert in.
+> **Goal:** move from rank #20 to a **1st / 2nd place** finish
+>
+> **This is the single source of truth.** It supersedes every earlier plan (v1.0 passive, v2.0 offensive).
+> It records both the *strategy* and the *implemented reality* of HORUS Sentinel:
+> an authorized offensive-reconnaissance & intelligence platform that performs active recon on
+> owned/authorized targets, precision-scrapes public sources, correlates everything into an
+> attack-surface graph, reasons over it with a **self-hosted or online fine-tuned model**, and
+> produces a **precise bilingual (Arabic/English) intelligence report** — stopping, by design,
+> exactly where exploitation would begin.
 
 ---
 
-## PART 0 — READ THIS FIRST: The Strategic Frame
+## PART 0 — THE CRITICAL FRAME (read this first — the competition weighs it heavily)
 
-### 0.1 The problem with the naïve merge (and why Path C wins)
+### 0.1 The one line that keeps this project winning instead of disqualified
 
-The tempting move was to bolt an *active cyber-scanning* engine (ARGUS) onto the winning geopolitical chatbot. As your co-architect I blocked that, because it contains a contradiction a military judge will find in one question:
+There is a hard boundary between two things that look similar to outsiders but are completely
+different to a security professional (and to a military judge):
 
-- Your model was fine-tuned on **GTD + GDELT** — historical terrorism and geopolitical event data (to ~2020). It reasons about **regions, threat actors, attack modalities, and geopolitical context**.
-- Your own HuggingFace model card explicitly warns it is **not suited for critical security decisions** without expert validation.
-- An *active network scanner* needs a model that reasons about **CVEs, ports, and services** — a completely different domain. Reusing the geopolitical model there is a scope mismatch, and demoing live scanning to military judges adds an ethics question you don't need.
-
-**Path C resolves all of this.** We keep everything technically impressive about ARGUS — the multi-agent orchestration, the knowledge graph, the RAG grounding, the authorization engine, the structured reporting — but we point the collection agents at **open-source intelligence** (the model's actual home turf) instead of active infrastructure scanning. The result:
-
-| Property | Why it wins for THIS competition |
+| ✅ What HORUS Sentinel IS | ❌ What it is NOT |
 |---|---|
-| **Domain-honest** | The agents collect the same *kind* of signal the model was trained to reason about |
-| **Passive & defensive** | Nothing touches anyone's infrastructure. This is a *blue-team analyst tool* — exactly what a defence college wants |
-| **No scope contradiction** | The model card's warning becomes a *feature* (we built in expert-in-the-loop validation), not a liability |
-| **Keeps the technical wow** | Multi-agent + graph + RAG + self-hosted fine-tuned brain — all intact |
-| **Reuses the winning asset** | The fine-tuned model graduates from "chatbot" to "the reasoning core of an autonomous analyst platform" |
+| **Authorized offensive reconnaissance** — active scanning of targets you **own** or have **written permission** for | Attacking systems you don't own / have no permission for |
+| **Reconnaissance & intelligence** — discovery, enumeration, mapping, correlation, reporting | **Exploitation** — breaking in, delivering payloads, bypassing authentication |
+| **Precision web scraping** of **public** data, respecting robots.txt + rate limits + law | Scraping behind logins/paywalls, harvesting personal data unlawfully, DoS-like hammering |
+| A **red-team recon** and **CTI analyst** trainer | A weapon |
 
-### 0.2 The one-sentence pitch (memorize it)
+The educational value is real and legitimate: this is exactly how professional red teams,
+penetration testers, and intelligence analysts are trained — the *reconnaissance* phase of an
+authorized engagement. HORUS Sentinel teaches and automates that phase, produces a professional
+intelligence product from it, and **stops at the boundary of exploitation** — by design.
 
-> **"HORUS Sentinel is an autonomous, multi-agent intelligence analyst: many specialized agents — the eyes of ARGUS — continuously gather open-source intelligence, correlate it into a living knowledge graph, and our self-hosted fine-tuned model — the Eye of HORUS — reasons over it to deliver prioritized, evidence-backed intelligence reports in minutes instead of days."**
+### 0.2 Why this framing is a *strength* in front of military judges
 
-Two mythologies, one honest system:
-- **ARGUS** (Greek hundred-eyed giant, *Panoptes*) = the **collection swarm** — many eyes gathering OSINT.
-- **HORUS** (Egyptian Eye that judges and protects, *"The Eye That Never Sleeps"* — your existing brand) = the **reasoning brain** that turns what the eyes saw into judgment.
+A military audience respects **discipline and rules of engagement** more than raw capability. A
+tool that says *"I can perform aggressive reconnaissance, but only under a signed authorization,
+only on in-scope targets, and I log every action"* demonstrates exactly the operational maturity
+they train for. The **Scope & Authorization Engine** is therefore not a limitation to apologize
+for — it is the **centerpiece feature** that makes an offensive tool responsible. Lead the demo
+with it: *"Watch it refuse an active scan against a target we're not authorized for — 403, by design."*
 
-### 0.3 What "intelligent, adaptable, practical" means here (mapping to the track)
+### 0.3 The MITRE ATT&CK anchor (academic + professional credibility)
 
-The track asks for *"intelligent, adaptable and practical digital systems that address real-world challenges."* We hit all three explicitly:
+The platform maps cleanly to the **first two tactics** of MITRE ATT&CK — the *pre-compromise*
+phase, which is precisely reconnaissance:
 
-- **Intelligent** — autonomous multi-agent reasoning with a fine-tuned domain model + RAG grounding, not a scripted pipeline.
-- **Adaptable** — a pluggable tool/agent architecture; add a new intelligence source by writing one class. A pluggable LLM layer (self-hosted or cloud). Two operating modes from one brain.
-- **Practical** — solves a documented real problem (analyst data-overload), produces a real deliverable (a structured intelligence report), and runs on a **$5 cloud budget** with a **self-hosted model** (data sovereignty — critical for a military user).
+- **TA0043 — Reconnaissance** — active scanning (T1595), network service discovery (T1046),
+  gathering victim host/network/identity info (T1592/T1590/T1589), external remote services
+  (T1133), searching open technical databases (T1596).
+- **TA0042 — Resource Development** / **TA0001 — Initial Access (T1190)** — what an adversary
+  could stage/do *next* from what recon revealed (mapped as downstream risk; never performed).
+
+HORUS Sentinel operationalizes TA0043 for **authorized defenders and trainees**: it shows exactly
+what an adversary would discover in the recon phase, so a defender sees their own exposure first.
+
+### 0.4 The two collection intensities (drives the whole architecture)
+
+- **PASSIVE** (default, runs on anything in-scope): OSINT from public records + public web sources.
+- **ACTIVE** (gated, runs ONLY on owned/authorized targets in the RoE): port/service scanning,
+  active DNS/subdomain enumeration, active fingerprinting, and a compliant crawler/scraper.
+
+The Authorization Engine separates them. **No active operation ever runs without an RoE that
+explicitly authorizes active scanning (`active_authorized = true`) AND lists the target inside
+`in_scope_domains`.** An out-of-scope active request is refused with **403** before it reaches
+the collection plane.
+
+### 0.5 Data sovereignty + language (added in this build)
+
+- **Sovereign or online brain (pluggable).** The reasoning model runs either **self-hosted via
+  Ollama** (nothing leaves the box — the right choice for an intelligence user) or **online via
+  Hugging Face** (the analyst's token, collected at first run). One config switch; the report is
+  identical either way.
+- **Bilingual (Arabic / English).** The entire UI, the model's narrative, and the report switch
+  between Arabic (RTL, default — it serves an Arabic-speaking intelligence audience) and English.
+
+### 0.6 The pitch (memorize it)
+
+> **"HORUS Sentinel is an autonomous offensive-reconnaissance analyst. Under a signed
+> authorization, its ARGUS agents perform active reconnaissance on in-scope targets and
+> precision-scrape public intelligence, correlate everything into a live attack-surface graph,
+> and our fine-tuned model — the Eye of HORUS, self-hosted for full data sovereignty — reasons
+> over it to produce a precise, evidence-backed intelligence report in Arabic or English. It
+> performs the full reconnaissance phase of a professional engagement, and stops exactly where
+> exploitation would begin."**
 
 ---
 
-## PART 1 — The Problem, The Users, The Value
+## PART 1 — The Problem, The Users, The Educational Value
 
-### 1.1 The real-world problem
-
-Intelligence and security analysts drown in open-source data. To assess a single question — *"What is the threat picture around entity/region X?"* — an analyst manually pivots across dozens of disconnected sources: news streams, event databases, WHOIS/DNS records, certificate logs, breach corpora, social and technical databases, reputation feeds. Then they hold the fragments in their head and try to correlate them into an assessment. This is:
-
-- **Slow** — hours to days per assessment.
-- **Inconsistent** — coverage depends on which sources the analyst remembers to check.
-- **Poorly correlated** — findings live in separate tabs; the *relationships* between them are reconstructed by hand.
-- **Hard to prioritize** — raw findings vastly outnumber the few that matter.
-- **Not reproducible** — two analysts produce two different assessments; there's no audit trail of *what was checked, when, from where*.
+### 1.1 The real problem
+The reconnaissance phase of any security assessment or intelligence task is **manual, slow, and
+fragmented**. A red-teamer or analyst juggles a dozen CLI tools and browser tabs, then
+hand-assembles findings. Trainees have no single, safe, auditable environment to *learn*
+professional recon end-to-end and produce a real deliverable from it.
 
 ### 1.2 What HORUS Sentinel does
+Given an **authorized target** + a signed **RoE**, it autonomously:
+1. **Reconnoiters** — passive OSINT + (if authorized) active scanning/enumeration.
+2. **Scrapes** — precision, compliant extraction from public web sources.
+3. **Correlates** — every finding into a unified **Attack-Surface / Intelligence Graph**.
+4. **Enriches** — reputation, known-CVE correlation, ATT&CK technique mapping.
+5. **Reasons** — the fine-tuned HORUS model (RAG-grounded) prioritizes and explains.
+6. **Reports** — a precise, chain-of-custody intelligence report (PDF/HTML/JSON), Arabic or English.
+7. **Validates** — a human analyst signs off before the report is final.
 
-Given an authorized **subject of inquiry** (a region + timeframe, an organization, a domain you own, or a public threat entity) plus a signed **Rules-of-Engagement (RoE)** record, it:
+### 1.3 Users
+| User | Use case |
+|---|---|
+| **Red-team / pentest trainee** | Learn + automate the authorized recon phase end-to-end |
+| **Intelligence / CTI analyst** | Deep OSINT research → structured intelligence product |
+| **SOC / blue team** | See own external exposure exactly as an adversary would |
+| **Instructor (Air Defence College)** | A safe, auditable, teachable recon+intel platform for cadets |
 
-1. **Collects** open-source intelligence through a swarm of specialized, passive agents.
-2. **Correlates** every finding into a unified **Intelligence Knowledge Graph** (entities + relationships).
-3. **Enriches** entities with reputation and contextual threat data.
-4. **Reasons** over the graph with the fine-tuned HORUS model (RAG-grounded) to identify what matters, prioritize it, and map it to established frameworks (MITRE ATT&CK where cyber-relevant; structured threat taxonomy for geopolitical).
-5. **Reports** a structured, evidence-backed, chain-of-custody intelligence deliverable (PDF / HTML / JSON) — with **every claim traceable to a source**, and an explicit **analyst-validation** step (honoring the model card's guidance).
-
-### 1.3 Users & use cases
-
-| User | Use case | Consumes |
-|---|---|---|
-| **Defence/intelligence analyst** | Rapid OSINT threat assessment of a region/entity/timeframe | The intelligence report |
-| **SOC / blue team** | Monitor the org's *own* public exposure (defensive EASM-lite, passive only) | Exposure findings + graph |
-| **CTI analyst** | Profile a public threat actor / infrastructure from open sources | Entity dossier |
-| **Instructor / trainee (Air Defence College)** | A teachable, transparent analyst tool for training | The whole system, hands-on |
-
-### 1.4 Why a military defence audience specifically likes this
-
-- **Passive & sovereign** — it never attacks; it runs a self-hosted model so **no data leaves their infrastructure**.
-- **Auditable** — every finding has a source and timestamp; every run has an authorization record. This is how real intelligence products are built.
-- **Analyst-augmenting, not analyst-replacing** — the explicit human-validation step reflects operational reality and defuses the "can we trust the AI?" question before it's asked.
+### 1.4 The educational thesis (state it in the report & viva)
+*"Reconnaissance is the first ATT&CK tactic and the foundation of both offense and defense. HORUS
+Sentinel is a training and automation platform for the authorized reconnaissance phase: it
+demonstrates, safely and under strict rules of engagement, exactly what can be discovered about a
+target from active scanning and public sources — turning that into a professional intelligence
+report — so trainees learn the tradecraft and defenders understand their exposure."*
 
 ---
 
 ## PART 2 — System Architecture
 
-### 2.1 The four planes (this is the mental model — memorize it)
+### 2.1 The four planes
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         HORUS SENTINEL                              │
-│                                                                     │
 │  ┌───────────────────────── CONTROL PLANE ──────────────────────┐   │
-│  │  Scope & Authorization Engine (RoE, allowlist, rate budget)  │   │
-│  │  Orchestrator (LangGraph stateful state machine)             │   │
+│  │  Scope & Authorization Engine  (RoE · scope · ACTIVE gate)   │   │
+│  │  Orchestrator (checkpointed stages; LangGraph-compatible)    │   │
 │  └──────────────────────────────┬───────────────────────────────┘   │
-│                                 │ authorized job                     │
+│                 authorized job (passive and/or active)               │
 │  ┌───────────────── COLLECTION PLANE ("ARGUS eyes") ─────────────┐   │
-│  │  OSINT Agent · Geo-Event Agent · Web/Infra Agent ·           │   │
-│  │  Threat-Intel Agent      → all via Tool Abstraction Layer     │   │
-│  │  (rate-limited · cached · audit-logged · passive-only)        │   │
+│  │  PASSIVE:  OSINT · Web-Infra fingerprint · Geo-Event · TI     │   │
+│  │  ACTIVE (gated): Network-Recon Agent — port scan + service    │   │
+│  │            fingerprint · active DNS/subdomain enum · crawler  │   │
+│  │  → all via the Tool Abstraction Layer                         │   │
+│  │    (classification-checked · rate-limited · cached · audited) │   │
 │  └──────────────────────────────┬───────────────────────────────┘   │
-│                                 │ normalized findings                │
+│                        normalized findings                           │
 │  ┌───────────────────── KNOWLEDGE PLANE ────────────────────────┐   │
-│  │  PostgreSQL (jobs/RoE/audit/findings)                        │   │
-│  │  Neo4j  → Intelligence Knowledge Graph (entities + edges)    │   │
-│  │  ChromaDB → RAG (MITRE ATT&CK + threat taxonomy + findings)  │   │
-│  │  Redis (cache/queue) · Object store (immutable evidence)     │   │
+│  │  PostgreSQL/SQLite · Neo4j/networkx (Attack-Surface Graph) ·  │   │
+│  │  ChromaDB/keyword (RAG: ATT&CK + corpus) · Redis · Evidence   │   │
 │  └──────────────────────────────┬───────────────────────────────┘   │
-│                                 │ graph + retrieved context          │
+│                     graph + retrieved context                        │
 │  ┌────────────────── REASONING & DELIVERY PLANE ────────────────┐   │
-│  │  HORUS Brain (fine-tuned Llama-3, self-hosted via Ollama)    │   │
-│  │  Analysis Agent (RAG-grounded reasoning) → risk scoring      │   │
-│  │  Human-validation checkpoint → Reporting Agent               │   │
-│  │  → structured Intelligence Report (PDF / HTML / JSON)         │   │
+│  │  HORUS Brain (fine-tuned Llama-3, self-hosted OR online HF) → │   │
+│  │  Analysis Agent (RAG) → deterministic risk scoring →         │   │
+│  │  Human validation → Reporting → PDF/HTML/JSON (AR/EN)         │   │
 │  └───────────────────────────────────────────────────────────────┘  │
-│                                 ▲                                    │
-│                    HORUS Command Center (Unified Web UI)             │
+│                    HORUS Command Center (bilingual Web UI)           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Core principle:** agents never pass big blobs to each other. Each agent writes normalized findings to the **Knowledge Plane** and passes only a reference. The graph is the single source of truth the brain reasons over. This keeps every step small, resumable, and auditable.
+**Graceful degradation (implemented):** every heavy dependency is an optional accelerator with a
+pure-Python fallback, so the platform runs with zero infrastructure and lights up when the real
+services are present:
 
-### 2.2 Design invariants (never violate these — they're what "production-grade" means)
+| Full stack (optional) | Fallback (always works) |
+|---|---|
+| PostgreSQL | SQLite file |
+| Neo4j | in-process `networkx` graph |
+| ChromaDB | deterministic keyword retriever |
+| Ollama / HF online model | deterministic grounded synthesis |
+| LangGraph | pure-Python `Orchestrator` |
+| Redis queue | in-memory `asyncio` queue |
+| WeasyPrint (English PDF) | pure-Python `fpdf2` Arabic RTL PDF |
 
-1. **Passive by default; nothing touches a third party's infrastructure.** All collection consumes already-public data. No active scanning of systems you don't own. (Any owned-asset checks are still gated by RoE and default to your own domain.)
-2. **No external call bypasses the Tool Abstraction Layer.** Rate-limit, cache, and audit are enforced centrally so no agent can skip them.
-3. **No job runs without an authorization record.** The Scope & Authorization Engine is a hard gate, not a checkbox.
-4. **The risk score is deterministic; the LLM explains it, never invents it.** Any model adjustment is bounded (±1 band), logged with a reason, and shown in the report.
-5. **Every claim in the report is traceable to a source + timestamp (chain of custody).**
-6. **A human analyst validates before a report is marked final** (honors the model card's guidance; turns a limitation into a designed control).
+### 2.2 Design invariants (never violate — this is "production-grade + responsible")
 
-### 2.3 Orchestration (why LangGraph, not a linear script)
+1. **Passive by default; active by explicit exception.** Active runs **only** when the RoE has
+   `active_authorized = true` **and** the target is in `in_scope_domains`.
+2. **No external call bypasses the Tool Abstraction Layer.** Classification check + rate-limit +
+   cache + audit are enforced centrally, so no agent can skip them.
+3. **No job runs without a valid, signed RoE.** The Authorization Engine is a hard gate — it
+   returns an `AuthContext` or it **raises**. There is no "warn and continue".
+4. **Scraping is compliant by construction** — robots.txt honored before every request, a
+   transparent User-Agent, conservative pacing, exponential backoff on 429/503, public data only,
+   provenance on everything. Controls in the code, not policies on paper.
+5. **Deterministic risk score; the LLM explains, never invents.** Bounded ±1 band, logged, shown.
+6. **Full chain of custody** — every finding traceable to source + timestamp; every active action
+   logged (target, port, time, authorization).
+7. **Human-authoritative** — an analyst validates before FINAL. The system **stops at
+   recommendation**; it never exploits.
 
-Intelligence gathering is a **fan-out / converge** problem with conditional re-entry: a new entity discovered by one agent becomes an input to others. We model this as a stateful graph:
+### 2.3 Orchestration (the active gate as a conditional stage)
 
-- Nodes = agents; edges = transitions; a shared `SentinelState` carries `job_id`, the `AuthContext`, and lightweight references (not data).
-- Conditional edges implement policy (e.g., an agent only runs if its source is enabled in the RoE and within rate budget).
-- Checkpointing (Postgres) makes long jobs **resumable and auditable** — every transition is persisted.
+The pure-Python `Orchestrator` (mirrored by the LangGraph definition) builds an ordered, checkpointed
+stage list per job. The active-recon stage is **only added** when `roe.has_active_sources()` and the
+subject is a domain/org — and every active tool re-checks authorization before it sends a packet:
 
-```python
-# workflows/sentinel_graph.py  (skeleton — orchestration only)
-from langgraph.graph import StateGraph, END
-from schemas import SentinelState
-
-def build_sentinel_graph():
-    g = StateGraph(SentinelState)
-
-    g.add_node("authorize",     authorization_gate)   # validate RoE, classify scope
-    g.add_node("osint",         osint_agent)          # passive public records
-    g.add_node("geo_event",     geo_event_agent)      # region/timeframe event context
-    g.add_node("web_infra",     web_infra_agent)      # passive infra/tech (owned or public)
-    g.add_node("threat_intel",  threat_intel_agent)   # reputation + framework context
-    g.add_node("analysis",      analysis_agent)       # HORUS brain, RAG-grounded
-    g.add_node("validate",      human_validation_gate)# analyst-in-the-loop checkpoint
-    g.add_node("report",        reporting_agent)
-
-    g.set_entry_point("authorize")
-    g.add_edge("authorize", "osint")
-    g.add_edge("osint", "geo_event")
-    g.add_edge("osint", "web_infra")
-    g.add_edge("geo_event", "threat_intel")
-    g.add_edge("web_infra", "threat_intel")
-    g.add_edge("threat_intel", "analysis")
-    g.add_edge("analysis", "validate")
-    g.add_edge("validate", "report")
-    g.add_edge("report", END)
-    return g.compile(checkpointer=postgres_checkpointer)
+```
+authorize → osint → {geo_event | web_infra} → [active_recon: GATED] → threat_intel → analysis
+          → [human validation] → report
 ```
 
-### 2.4 The Tool Abstraction Layer (where the non-negotiable controls live)
-
-Every external source implements one interface, so no agent can bypass the operational controls:
+### 2.4 Tool Abstraction Layer — enforces the passive/active classification
 
 ```python
 class IntelTool(ABC):
     name: str
-    classification: Literal["passive"]        # Path C: everything is passive
-    source_category: str                       # "public_records" | "geo_events" | ...
-    rate_limit: RateBudget                      # per-source token bucket
-    cache_ttl: int                              # avoid re-querying public sources
-
-    @abstractmethod
-    async def run(self, subject: Subject, ctx: AuthContext) -> ToolResult: ...
+    classification: Classification        # PASSIVE | ACTIVE  (active is gated here)
+    source_category: SourceCategory
+    cache_ttl: int
 
     async def __call__(self, subject, ctx):
-        ctx.assert_allows(self.classification, self.source_category, subject)  # raises if disallowed
-        if cached := await cache.get(self.cache_key(subject)):
-            return cached
-        await self.rate_limit.acquire()
-        result = await self.run(subject, ctx)
-        await audit_log.record(self.name, subject, ctx, result.summary())  # chain of custody
-        await cache.set(self.cache_key(subject), result, ttl=self.cache_ttl)
-        return result
+        ctx.assert_allows(self.classification, self.source_category, subject)  # HARD GATE — raises
+        ...  # cache (passive) → rate-limit → run() → audit (chain of custody)
 ```
 
-Three properties fall out for free: **rate-limiting / ToS compliance** enforced centrally, **caching** (politeness + the $5 cost story), and **every external touch audit-logged**.
+`assert_allows` refuses an ACTIVE call unless the RoE authorizes active ops *and* the subject is in
+scope — proven by `tests/test_active_authorization.py` (7 scenarios, all green).
 
 ---
 
-## PART 3 — The Agents (Collection Plane in detail)
+## PART 3 — The Agents (Collection Plane)
 
-All agents share one contract: read a `Subject` + `AuthContext`, call tools through the abstraction layer, write **normalized findings** to the Knowledge Base, return a typed Pydantic result. All are **passive**.
+### 3.1 OSINT Collection Agent — PASSIVE
+WHOIS/RDAP, DNS (all record types), certificate transparency (crt.sh), passive subdomain discovery,
+email-pattern inference. → base entity picture.
 
-### 3.1 OSINT Collection Agent
-**Mission:** build the base entity picture from already-public records.
-- **Tools:** WHOIS/RDAP, DNS (A/AAAA/MX/TXT/NS/CNAME), certificate transparency (crt.sh), passive subdomain discovery (public sources only), email-pattern inference, breach-corpus lookups via reputable APIs (e.g., HaveIBeenPwned), public code-repo metadata search.
-- **Output (normalized):** organization, domains, subdomains (with source + resolved IPs), email pattern, public-profile references, exposed-artifact candidates.
+### 3.2 Web / Infrastructure Fingerprint Agent — PASSIVE
+One polite page fetch → tech stack, CDN/WAF, TLS posture; wires `IP -[EXPOSES]-> Service -[RUNS]->
+Technology` so the signature CVE query walks it.
 
-### 3.2 Geo-Event Context Agent  *(this is where your existing strength shines)*
-**Mission:** attach geopolitical / threat-event context to a region + timeframe — the exact capability your model was trained on.
-- **Tools:** curated GTD/GDELT-derived local corpus (you already built the 159,826-pair dataset), plus optional live news/event APIs (passive, rate-limited).
-- **Output:** for a region+year — instability indicators, dominant event/attack modalities, primary target categories, actor references, a threat-context summary. This becomes prime RAG material for the HORUS brain.
+### 3.3 Geo-Event Context Agent — PASSIVE  *(the existing strength)*
+Queries the GTD/GDELT-derived corpus (the 159,826-pair dataset) → geopolitical/threat-event context
+for a region/timeframe. Prime RAG material for the HORUS brain.
 
-### 3.3 Web / Infrastructure Fingerprinting Agent  *(passive)*
-**Mission:** characterize the public technology footprint of a web-facing entity (owned domain or public entity).
-- **Tools:** polite HTTP(S) header + single-page fetch, fingerprint matching (framework/CMS/JS/CDN/WAF), favicon hashing, cloud-provider inference from IP ranges + headers + CNAME chains. Passive internet-scan data via Shodan/Censys APIs (reads pre-collected data — no packets to the target).
-- **Output:** tech stack, CDN/WAF presence, cloud provider, TLS posture, version evidence (feeds CVE correlation).
+### 3.4 Threat-Intelligence Enrichment Agent — PASSIVE
+VirusTotal / OTX / AbuseIPDB (reputation), NVD/OSV (known-CVE correlation), MITRE ATT&CK mapping.
 
-### 3.4 Threat-Intelligence Enrichment Agent  *(passive)*
-**Mission:** attach reputation and framework context.
-- **Tools:** VirusTotal, AlienVault OTX, AbuseIPDB (reputation), NVD/OSV (known-CVE correlation for any discovered product+version — informational only), MITRE ATT&CK mapping.
-- **Output:** normalized reputation score, indicator list, known-CVE references, candidate ATT&CK technique IDs (with emphasis on TA0043 Reconnaissance / TA0042 Resource Development — the *defensive* framing: "here is what an adversary could learn about you from open sources").
-
----
-
-## PART 4 — The Reasoning Brain (your fine-tuned model, elevated)
-
-### 4.1 The role of the HORUS model
-
-Your fine-tuned `Horus-OSINT` model already produces a **structured, sectioned Intelligence Report Card** (GEOPOLITICAL CONTEXT → THREAT ASSESSMENT → CONCLUSION). In HORUS Sentinel it becomes the **Analysis Agent** — but now it reasons over a *correlated knowledge graph + RAG-retrieved context*, not a single free-text prompt. That is a large capability jump on top of the same model.
-
-### 4.2 How reasoning works (RAG over the graph)
-
-1. For the subject, retrieve the relevant **subgraph** (entity + 1–2 hop neighborhood) from Neo4j.
-2. Retrieve grounding context from ChromaDB: relevant **MITRE ATT&CK** techniques (cyber-relevant subjects) and/or the **geo-threat corpus** (region/entity subjects).
-3. Build a structured prompt: correlated facts + retrieved framework context → ask the model to produce the report card sections (context, assessment, prioritized findings, recommendations).
-4. **Ground truth stays in the graph.** The model synthesizes and explains; it does not invent entities. Every finding references graph nodes/evidence IDs.
-
-### 4.3 The provider bridge (the one clean integration point)
-
-```python
-# horus_brain/horus_provider.py
-class HorusReasoningProvider(LLMProvider):
-    """Wraps the fine-tuned Llama-3-8B served by Ollama (VPC-internal, port 11434).
-       Same Intelligence Report Card DNA the model already produces — now graph-grounded."""
-    name = "horus-selfhosted"
-    endpoint = "http://ollama:11434/api/generate"
-    model = "horus-osint"
-
-    async def reason(self, subgraph: Subgraph, rag_context: str) -> ReportCard:
-        prompt = build_intel_prompt(subgraph, rag_context)   # structured, grounded
-        raw = await self._call_ollama(prompt)
-        return ReportCard.parse(raw)                          # typed, sectioned
-```
-
-### 4.4 Deterministic risk scoring (the model explains, never invents)
-
-```
-RiskScore(entity) = w_e·Exposure + w_t·ThreatContext + w_i·ReputationIntel + w_c·Criticality
-default weights:    w_e=0.30       w_t=0.30            w_i=0.20             w_c=0.20
-```
-
-- Deterministic formula → base score + band (Critical/High/Medium/Low/Info).
-- The model may adjust **±1 band max**, must log the reason, and the adjustment is shown in the report. Reproducible: same inputs → same score.
-
-### 4.5 Human-validation checkpoint (turning the model card warning into a feature)
-
-Before a report is `FINAL`, an analyst sees the model's draft findings + the evidence and clicks **Validate** / **Flag** / **Edit**. This:
-- Honors your model card's explicit guidance for security/military contexts.
-- Matches how real intelligence products are signed off.
-- Is a **selling point** to military judges, not an admission of weakness. Frame it as *"AI-augmented analyst, human-authoritative."*
+### 3.5 Network Reconnaissance Agent — **ACTIVE (GATED)**  *(the offensive capability, implemented)*
+Runs only on owned/authorized targets, tools executed in order (each persists so the next sees it):
+- **Active DNS / subdomain enumeration** — wordlist brute-force + resolution (`tools/active_dns_tool.py`).
+- **TCP connect port scan + service/banner fingerprint** — asyncio connect scan across common ports
+  on resolved IPs, light banner grab (`tools/port_scan_tool.py`).
+- **Compliant web crawler/scraper** — robots-gated BFS crawl within a page/depth budget, extracting
+  endpoints, forms, emails, technologies (`tools/web_crawl_tool.py`, see Part 4).
+- **Absolute stop line:** discovery/enumeration only. **No exploitation, no auth attempts, no brute
+  forcing credentials, no payloads.** If a feature would cross into exploitation, it is not built.
 
 ---
 
-## PART 5 — Knowledge Model (the Intelligence Knowledge Graph)
+## PART 4 — The Precision Web-Scraping Engine (compliant by construction)
 
-### 5.1 Node types
-`Organization`, `Domain`, `Subdomain`, `IP`, `Service`, `Technology`, `Certificate`, `Email`, `Person`, `CVE`, `CloudAsset`, `Region`, `ThreatActor`, `Event`, `Indicator`.
+The crawler is **precise** (targeted, budgeted, same-host) and **compliant by construction** — each
+rule is a code-level control, not a guideline:
 
-### 5.2 Edge types (examples)
+1. **robots.txt first.** Fetched and parsed on entry; `can_fetch(User-Agent, url)` is checked before
+   **every** request. Disallowed → skipped + logged (`robots_skip`). Disallowed paths are *recorded*
+   as intelligence (they exist) but never fetched.
+2. **Transparent identity.** A stable, honest `User-Agent` naming the project + a contact URL. No
+   pretending to be a browser to evade detection.
+3. **Conservative pacing + backoff.** Bounded page/depth budget; exponential backoff with `Retry-After`
+   on HTTP 429/503 — never behaves like a DoS.
+4. **Public data only.** No login/paywall/access-control circumvention; no collection behind auth.
+5. **Provenance & audit.** Every fetch produces an `Evidence` record (source + timestamp + summary),
+   so every scraped datum is defensible and traceable.
+
+> **Viva-ready line:** *"Our scraper is compliant by construction: robots.txt is checked in the fetch
+> layer before every request, we identify ourselves transparently, we rate-limit and back off on
+> errors, we only touch public data, and we keep provenance on everything — controls in the code no
+> agent can bypass."*
+
+---
+
+## PART 5 — The Reasoning Brain (pluggable, self-hosted or online, bilingual)
+
+### 5.1 Role
+The fine-tuned `Horus-OSINT` model becomes the **Analysis Agent**, reasoning over a **correlated
+graph + RAG context** rather than a single prompt. Ground truth stays in the graph; the model
+synthesizes and explains, referencing evidence — it never invents entities or scores.
+
+### 5.2 Pluggable transport (`horus_brain/`)
+`BRAIN_BACKEND` selects the transport, with a hybrid fallback chain:
+- `hybrid` (default) — try **Hugging Face online**, then **local Ollama**, then grounded offline synthesis.
+- `hf_serverless` — HF Inference router; `hf_endpoint` — a dedicated HF Inference Endpoint URL.
+- `ollama` — self-hosted only (**data sovereignty — nothing leaves the box**; the intelligence-grade choice).
+
+The HF transport wraps the prompt in the Llama-3 chat template and reads the model's response; every
+transport degrades to a grounded, still-Arabic offline synthesis so a job always returns a report.
+
+### 5.3 First-run setup (no hard-coded secrets)
+On first launch the Command Center shows a setup modal (or `python -m core.setup_wizard`): the analyst
+enters their Hugging Face token → it is validated against the HF `whoami` API → saved to `.env`. The
+platform still runs (offline synthesis / local Ollama) without a token.
+
+### 5.4 Deterministic risk scoring
 ```
-(Organization)-[:OWNS]->(Domain)
-(Domain)-[:HAS_SUBDOMAIN]->(Subdomain)
-(Subdomain)-[:RESOLVES_TO]->(IP)
-(IP)-[:EXPOSES]->(Service)
-(Service)-[:RUNS]->(Technology)
-(Technology)-[:HAS_VULNERABILITY]->(CVE)
-(Region)-[:HAS_EVENT]->(Event)
-(ThreatActor)-[:ASSOCIATED_WITH]->(Event)
-(Entity)-[:HAS_INDICATOR]->(Indicator)
+RiskScore(entity) = 0.30·Exposure + 0.30·ThreatContext + 0.20·ReputationIntel + 0.20·Criticality
 ```
+Deterministic base score + band; the model may adjust **±1 band max**, must log the reason, shown in
+the report. Reproducible: same graph → same colors.
 
-### 5.3 Why a graph (the single strongest technical idea)
-Once findings are a graph, analysis becomes **traversal**, not manual cross-referencing:
-- *"Which public services run technology with a known critical CVE?"* → one Cypher query.
-- *"Which entities share infrastructure or an actor with a high-risk event?"* → neighborhood query.
-- The Analysis Agent retrieves **subgraphs** as grounded LLM context — far more reliable than dumping raw JSON into a prompt.
-- The rendered, risk-colored graph is your **single most screenshot-worthy artifact** — put it on every slide, the report cover, and LinkedIn.
+### 5.5 Offensive vs defensive framing
+When active recon produced live attack surface (open ports / endpoints), the analysis switches to an
+**offensive frame**: it surfaces ports/endpoints as prioritized findings, maps them to offensive
+ATT&CK techniques (T1046, T1190, T1133, T1595), and the prompt asks the model to describe what an
+adversary could do next — with defensive recommendations, and **no actual exploitation**.
+
+### 5.6 Human-validation checkpoint
+Before FINAL, an analyst sees draft findings + evidence → **Validate / Flag / Edit**. A report is only
+`COMPLETED` after a `validate` action; validating renders the full deliverable set (HTML + JSON + PDF).
+
+---
+
+## PART 6 — Knowledge Model (Attack-Surface / Intelligence Graph)
+
+**Nodes:** `Organization, Domain, Subdomain, IP, Port, Service, Technology, Endpoint, Certificate,
+Email, Person, CVE, CloudAsset, Region, ThreatActor, Event, Indicator`.
+
+**Edges (examples):**
+```
+(Organization)-[:OWNS]->(Domain)-[:HAS_SUBDOMAIN]->(Subdomain)-[:RESOLVES_TO]->(IP)
+(IP)-[:HAS_OPEN_PORT]->(Port) ; (IP)-[:EXPOSES]->(Service)-[:RUNS]->(Technology)-[:HAS_VULNERABILITY]->(CVE)
+(Domain)-[:HAS_ENDPOINT]->(Endpoint) ; (Email)-[:MENTIONED_ON]->(Domain)
+(Region)-[:HAS_EVENT]->(Event)<-[:ASSOCIATED_WITH]-(ThreatActor)
+```
+Analysis becomes traversal, not manual cross-referencing; the Analysis Agent retrieves subgraphs as
+grounded context; the risk-colored graph is the **single most screenshot-worthy artifact**.
 
 ```cypher
-// example: public services carrying a critical known vuln
+// active-recon result: owned services exposing a critical known vuln
 MATCH (i:IP)-[:EXPOSES]->(s:Service)-[:RUNS]->(t:Technology)-[:HAS_VULNERABILITY]->(c:CVE)
-WHERE c.cvss >= 9.0 AND i.internet_facing = true
-RETURN i.address, s.port, t.name, c.id, c.cvss ORDER BY c.cvss DESC
+WHERE c.cvss >= 9.0 RETURN i.address, s.name, t.name, c.id, c.cvss ORDER BY c.cvss DESC
 ```
 
 ---
 
-## PART 6 — Output System
+## PART 7 — Output System (the precise, bilingual intelligence report)
 
-### 6.1 Report structure (9 sections)
-1. **Executive Summary** — model-authored, non-technical: the picture in a paragraph + top 3–5 items + headline metrics.
-2. **Subject & Scope** — what was assessed, the RoE, the sources enabled.
-3. **Discovered Entities** — with source + timestamp.
-4. **Context & Exposure** — geo-event context and/or public infra/tech footprint.
-5. **Threat-Intelligence Enrichment** — reputation, indicators, known-CVE references.
-6. **Intelligence Knowledge Graph** — rendered map (interactive in HTML, static in PDF), risk-colored.
-7. **Risk Analysis** — matrix + per-finding score with component breakdown.
-8. **Prioritized Findings & Recommendations** — each: evidence → why it matters → framework mapping → recommendation.
-9. **Appendix (Chain of Custody)** — full evidence list with source attribution + collection times + the RoE + the analyst validation record.
+### 7.1 Report structure (9 sections)
+1. Executive Summary — model-authored: the picture + top findings + headline metrics.
+2. Target, Scope & Authorization — the RoE, what was authorized (passive/active), sources enabled.
+3. Reconnaissance / Discovered Entities — passive + (if run) active results, each with source/timestamp.
+4. Context & Exposure — geo-event context and/or the mapped web/infra + attack surface.
+5. Threat-Intelligence Enrichment — reputation, known-CVE references, ATT&CK mapping.
+6. Attack-Surface / Intelligence Graph — rendered map, risk-colored (interactive in HTML).
+7. Risk Analysis — matrix + per-finding score with component breakdown.
+8. Prioritized Findings & Recommendations — evidence → why it matters → ATT&CK → recommendation.
+9. Appendix — Chain of Custody — full evidence list (incl. robots decisions), the RoE, the
+   active-action log, and the analyst validation record.
 
-### 6.2 Formats
-- **PDF** (Jinja2 → WeasyPrint) — the deliverable.
-- **HTML** — interactive, with the live graph viewer.
-- **JSON** — machine-readable, for downstream tooling.
+### 7.2 Formats & language
+- **PDF** — a **real Arabic RTL PDF** built with pure-Python `fpdf2` + `arabic-reshaper` +
+  `python-bidi` + a bundled Amiri OFL font (works on any OS, no system libraries). English uses
+  WeasyPrint when available. Download: `GET /jobs/{id}/download/pdf`.
+- **HTML** — interactive, with the live Cytoscape graph; Arabic (RTL) or English template.
+- **JSON** — machine-readable full context.
+- **Language** — `REPORT_LANGUAGE = ar | en`, toggled from the UI (**EN / ع**) or
+  `POST /setup/language`. Switches UI, model narrative, and report together.
 
 ---
 
-## PART 7 — Technology Stack
+## PART 8 — Technology Stack
 
-| Layer | Choice | Rationale |
+| Layer | Choice |
+|---|---|
+| Language | Python 3.12 (3.13 works) |
+| API | FastAPI + Uvicorn |
+| Orchestration | pure-Python `Orchestrator` (+ LangGraph-compatible definition) |
+| Brain | Provider-abstracted: self-hosted Ollama **or** online Hugging Face (hybrid) |
+| Active recon | asyncio TCP connect scan, dnspython enum, stdlib+httpx compliant crawler |
+| Web scraping | httpx + `urllib.robotparser` + stdlib `html.parser` (+ backoff) |
+| OSINT | WHOIS/RDAP, dnspython, crt.sh, Shodan/Censys (optional) |
+| Threat intel | VirusTotal, OTX, AbuseIPDB, NVD/OSV, MITRE ATT&CK |
+| Relational | PostgreSQL / SQLite fallback |
+| Graph | Neo4j / networkx fallback |
+| Vector/RAG | ChromaDB / keyword fallback |
+| Cache/queue | Redis / in-memory fallback |
+| Reporting | Jinja2 → HTML; fpdf2 (Arabic PDF) / WeasyPrint (English PDF); Cytoscape.js |
+| Frontend | Self-contained bilingual SPA (served at `/ui`) + Cytoscape |
+| Deploy | Docker + docker-compose |
+| Quality | ruff (lint+format), mypy, pytest, bandit/pip-audit; GitHub Actions CI |
+
+---
+
+## PART 9 — Repository Structure (actual)
+
+```
+<repo-root>/
+├── HORUS_Sentinel_Master_Plan.md     # THIS FILE — the constitution (source of truth)
+├── README.md · LICENSE
+└── horus-sentinel/                    # THE PROJECT (run everything from here)
+    ├── api/           # FastAPI: jobs, demo, setup (token + language), download
+    ├── core/          # authorization (passive/active gate), audit, rate_limit, jobs, db,
+    │                  #   config, setup_wizard
+    ├── agents/        # osint · web_infra · geo_event · threat_intel · active_recon(GATED) ·
+    │                  #   analysis · report
+    ├── tools/         # IntelTool ABC + whois/dns/crtsh/rdap/fingerprint/reputation/osv +
+    │                  #   active_dns · port_scan · web_crawl (active)
+    ├── graph/         # Attack-Surface / Intelligence Graph (networkx + Neo4j mirror)
+    ├── scoring/       # deterministic risk-scoring engine
+    ├── rag/           # ATT&CK (defensive + offensive) + geo corpus, retrieval
+    ├── horus_brain/   # brain dispatcher · ollama provider · HF provider · prompting (AR/EN)
+    ├── workflows/     # orchestrator (+ sentinel_graph LangGraph) + worker/queue
+    ├── reporting/     # Jinja2 templates (AR/EN) · arabic_pdf (fpdf2) · fonts/ (Amiri)
+    ├── schemas/       # RoE (active fields) · Subject · AuthContext · findings · state
+    ├── horus-ui/      # bilingual Command Center (index.html)
+    ├── data/          # attack_knowledge.json · geo_corpus.sample.json · reports/
+    ├── deploy/        # docker-compose, Dockerfile
+    ├── tests/         # ~97 tests (incl. active-recon auth gate + tools)
+    └── horus-geointel/ # FROZEN placeholder for the award-winning original — do not touch
+```
+
+> **Team rule:** `horus-geointel/` is **frozen**. Build around it, never inside it.
+
+---
+
+## PART 10 — Build Plan (Waterfall) & Status
+
+Rotate **Driver / Navigator / Verifier** per task. Each phase ends demoable, with a git tag.
+
+| Phase | Scope | Status |
 |---|---|---|
-| Language | Python 3.12 | Security + AI ecosystem |
-| Backend / API | FastAPI + Uvicorn | Async, typed, auto OpenAPI docs |
-| Orchestration | LangGraph (core) + LangChain (adapters) | Stateful, conditional, checkpointed graph |
-| LLM layer | Provider-abstracted; **default = self-hosted fine-tuned Llama-3 via Ollama** | Data sovereignty + no vendor lock-in |
-| Relational DB | PostgreSQL | Jobs, RoE, audit, findings |
-| Graph DB | Neo4j (prod) / networkx (MVP) | Intelligence Knowledge Graph |
-| Vector DB | ChromaDB | RAG over ATT&CK + geo corpus + findings |
-| Cache / queue | Redis | Cache, rate budgets, task queue |
-| Object store | MinIO (local) / S3 (cloud) | Immutable evidence |
-| OSINT tools | WHOIS/RDAP, dnspython, crt.sh, Shodan, Censys, fingerprinting | Passive discovery |
-| Threat intel | VirusTotal, OTX, AbuseIPDB, NVD/OSV, MITRE ATT&CK | Enrichment |
-| Reporting | Jinja2 + WeasyPrint; Cytoscape.js/D3 | HTML→PDF + interactive graph |
-| Frontend | React + Tailwind + Cytoscape.js | The Command Center UI judges will click |
-| Deploy | Docker + docker-compose → AWS EC2/ECS (extend existing Terraform) | Reproducible, $5 story |
-| Observability | Structured logging, Prometheus/Grafana | Production-grade signal |
-| CI/CD | GitHub Actions (lint, type-check, test, security scan) | Portfolio polish |
+| 0 — Consolidation & setup | monorepo, frozen winning project, docker-compose, README | ✅ done |
+| 1 — Control plane | RoE/AuthContext/Subject; Authorization Engine + **passive/active gate**; Tool ABC; `POST /jobs` | ✅ done |
+| 2 — Passive collection + compliant scraping | OSINT · web-infra · geo-event · threat-intel; robots-compliant crawler | ✅ done |
+| 3 — Active reconnaissance (GATED) | active DNS · port scan + fingerprint · web crawl; refuse out-of-scope (403) | ✅ done |
+| 4 — Graph + risk scoring | attack-surface graph (Port/Endpoint) + deterministic scoring | ✅ done |
+| 5 — Brain + reporting | pluggable HF/Ollama brain · RAG · analysis · bounded ±1 · human-validation · bilingual PDF/HTML/JSON | ✅ done |
+| 6 — Orchestration end-to-end | checkpointed stages + queue/worker; job resumes after kill | ✅ done |
+| 7 — Unified UI | bilingual Command Center · mode selector · active toggle · graph · Guided Demo | ✅ done |
+| 8 — Hardening, deploy, pitch | CI green (ruff/mypy/pytest) · security & compliance review · deploy · demo video + slides + viva | 🔜 remaining |
+
+**Tags:** `v0.1-foundation` … `v0.8-ui` → `v1.0-competition`.
 
 ---
 
-## PART 8 — Repository Structure
+## PART 11 — Why This Wins (Feature → Judging Advantage)
 
-```
-horus-sentinel/
-├── horus-geointel/            # ← THE WINNING PROJECT, MOVED IN WHOLE, FROZEN
-│   ├── terraform/             #   existing IaC (extend elsewhere, don't edit here)
-│   ├── fine-tuning/           #   existing Colab QLoRA notebook
-│   ├── pyspark/               #   existing EMR pipeline
-│   └── README.md              #   existing — it won; leave it
-│
-├── api/                       # FastAPI app, routes, job submission
-├── core/
-│   ├── authorization.py       # Scope & Authorization Engine + RoE model
-│   ├── audit.py               # chain-of-custody logging
-│   └── rate_limit.py          # token-bucket rate budgets
-├── agents/
-│   ├── osint_agent.py
-│   ├── geo_event_agent.py     # ← leverages your GTD/GDELT strength
-│   ├── web_infra_agent.py
-│   ├── threat_intel_agent.py
-│   ├── analysis_agent.py      # ← RAG-grounded reasoning
-│   └── report_agent.py
-├── tools/                     # IntelTool ABC + integrations
-│   ├── base.py                # IntelTool ABC (rate-limit/cache/audit)
-│   ├── whois_tool.py
-│   ├── dns_tool.py
-│   ├── crtsh_tool.py
-│   ├── shodan_tool.py
-│   ├── censys_tool.py
-│   ├── fingerprint_tool.py
-│   └── threatintel_tool.py
-├── graph/                     # Intelligence Knowledge Graph models + queries
-├── scoring/                   # deterministic risk-scoring engine
-├── rag/                       # ATT&CK + geo corpus, embeddings, retrieval
-├── horus_brain/
-│   └── horus_provider.py      # ← the bridge: wraps your Ollama-served model
-├── workflows/
-│   └── sentinel_graph.py      # LangGraph orchestration
-├── reporting/                 # Jinja2 templates, PDF/HTML/JSON renderers
-├── schemas/                   # Pydantic: SentinelState, RoE, findings, Subject
-├── horus-ui/                  # React + Cytoscape Command Center
-│   ├── src/
-│   │   ├── ModeSelector/      #   Geo-Intel | OSINT-Recon
-│   │   ├── GeoIntelView/      #   your existing chat, preserved
-│   │   ├── ReconView/         #   subject + RoE → live job → report
-│   │   └── KnowledgeGraph/    #   Cytoscape viewer
-│   └── Dockerfile             #   Nginx (as you already do)
-├── deploy/                    # docker-compose for the whole stack
-├── tests/
-└── README.md                  # top-level unified story
-```
-
-**Team rule:** everything under `horus-geointel/` is **frozen**. Build around it, never inside it.
-
----
-
-## PART 9 — The Ground-Up Build Plan (Waterfall, 3 People Together)
-
-You work as **one team, sequentially, task by task**. So this is a single ordered backlog. Each phase ends with a demoable result and a git tag. Rotate three roles per task so everyone can answer anything in the viva:
-- **Driver** (types) · **Navigator** (reviews live vs. the spec) · **Verifier** (runs it, confirms Definition of Done, writes the demo note)
-
-> **Pacing:** phases are written to be flexible. Comfortable pace ≈ 2 weeks/phase; aggressive ≈ 1 week/phase. Set the pace to your real deadline. Phases 0–4 + 8 are the **minimum winning system**; 5–7 are depth/polish.
-
-### PHASE 0 — Consolidation & Environment  *(~2–3 days)*
-**Goal:** one repo, winning project preserved, everyone runs everything locally.
-
-| Task | DoD |
-|---|---|
-| 0.1 Create `horus-sentinel` monorepo; move winning project into `horus-geointel/` untouched | Old project still runs identically as a subfolder |
-| 0.2 `docker-compose`: Postgres, Redis, Neo4j, Ollama serving your model | `docker-compose up` runs all; `curl` to Ollama returns a report card |
-| 0.3 Top-level README skeleton + architecture diagram + the one-sentence pitch | README tells the ARGUS-feeds-HORUS story |
-| 0.4 CONTRIBUTING + branch strategy + conventional-commit convention agreed | All three can commit cleanly |
-
-**Tag:** `v0.1-foundation` · **Demo:** "The winning project, intact, inside the platform, brain running locally."
-
-### PHASE 1 — Control Plane (Authorization = the maturity flex)  *(~1–2 wk)*
-**Goal:** the hard gate exists before any collection code. #1 credibility signal for a military audience.
-
-| Task | DoD |
-|---|---|
-| 1.1 Pydantic schemas: `RoE`, `SentinelState`, `Subject`, `AuthContext` | Validation tests pass on valid + invalid RoE |
-| 1.2 Scope & Authorization Engine: `assert_allows(classification, source_category, subject)` | Disallowed source/out-of-scope subject **raises** — proven by test |
-| 1.3 Tool Abstraction Layer: `IntelTool` ABC (rate-limit + cache + audit) | A dummy tool passes all three layers; audit rows appear |
-| 1.4 FastAPI `POST /jobs` + `GET /jobs/{id}` + Postgres persistence | A job (subject+RoE) is stored and retrievable |
-
-**Tag:** `v0.2-authz` · **Demo:** "Watch it refuse a disallowed source. That's by design." (Scores big with Army judges.)
-
-### PHASE 2 — Passive Collection (the eyes open)  *(~1–2 wk)*
-**Goal:** real OSINT on a subject you're authorized for (your own domain / a public region).
-
-| Task | DoD |
-|---|---|
-| 2.1 OSINT Agent: WHOIS/RDAP, DNS, crt.sh, subdomains, email patterns | `POST /jobs` returns real entities for your own domain |
-| 2.2 Geo-Event Agent: query your GTD/GDELT corpus for region+timeframe | Returns instability + modality + target context (your model's home turf) |
-| 2.3 Threat-Intel Agent: VT/OTX/AbuseIPDB + NVD/OSV | Reputation + known-CVE references appear |
-| 2.4 Everything routes through the Tool Abstraction Layer | Repeat request = cache hit; audit log proves it |
-
-**Tag:** `v0.3-collection` · **Demo:** "Point it at our domain / a region — findings in seconds, rate-limited and logged."
-
-### PHASE 3 — Intelligence Knowledge Graph (the centerpiece)  *(~1–2 wk)*
-**Goal:** turn scattered findings into ONE queryable, visual model.
-
-| Task | DoD |
-|---|---|
-| 3.1 Neo4j node/edge models (Part 5) | All core node/edge types writable |
-| 3.2 Write collected findings into the graph | The Cypher query in Part 5.3 returns real results on your data |
-| 3.3 Web/Infra Agent: passive fingerprint + Shodan/Censys | Tech stack + cloud/CDN/TLS on assets |
-| 3.4 Deterministic risk-scoring engine (Part 4.4) | Reproducible per-entity score; unit-tested sub-scores |
-
-**Tag:** `v0.4-graph` · **Demo:** the risk-colored graph on screen — "red = look here first."
-
-### PHASE 4 — The Brain Bridge (HORUS meets ARGUS)  *(~1–2 wk — heart of the merge)*
-**Goal:** your fine-tuned model becomes the RAG-grounded Analysis Agent.
-
-| Task | DoD |
-|---|---|
-| 4.1 RAG: load MITRE ATT&CK (TA0043/TA0042) + geo corpus into ChromaDB | Semantic query returns a relevant technique/context |
-| 4.2 `horus_brain/horus_provider.py`: wrap the Ollama model as a provider | Returns a structured report card from a subgraph |
-| 4.3 Analysis Agent: subgraph + RAG context → HORUS model → findings | One real finding: context → evidence → framework mapping → recommendation → score |
-| 4.4 Bounded LLM adjustment (±1 band, logged) | Model can't move a score >1 band; reason logged |
-| 4.5 Human-validation checkpoint (Validate/Flag/Edit) | A report can't be FINAL without an analyst action recorded |
-
-**Tag:** `v0.5-brain` · **Demo:** "The same brain that assessed geopolitics now reads the graph and writes the report — self-hosted, nothing leaves our infrastructure — and an analyst signs it off."
-
-### PHASE 5 — Orchestration + Reporting (one command → one deliverable)  *(~1–2 wk)*
-| Task | DoD |
-|---|---|
-| 5.1 LangGraph wiring of all agents (Part 2.3) | `build_sentinel_graph()` runs end-to-end |
-| 5.2 Redis queue + async workers + Postgres checkpointing | A job resumes after a mid-run kill |
-| 5.3 Reporting Agent: Jinja2 → WeasyPrint PDF + HTML + JSON (Part 6) | One job → full 9-section report |
-| 5.4 Chain-of-custody appendix (RoE + timestamps + validation record) | Report proves what ran, when, under what authorization, validated by whom |
-
-**Tag:** `v0.6-report` · **Demo:** "One subject in, one full intelligence report out, in minutes."
-
-### PHASE 6 — The Unified UI (what judges actually click)  *(~1–2 wk — CRITICAL)*
-**Goal:** a polished HORUS Command Center where judges try it themselves, zero setup.
-
-| Task | DoD |
-|---|---|
-| 6.1 Evolve your SPA into a mode selector: **Geo-Intel | OSINT-Recon** | Clean HORUS home, two clear buttons |
-| 6.2 Geo-Intel view = your existing chat, preserved | Unchanged, still great |
-| 6.3 Recon view: subject + generate demo RoE → live job progress → report | Judge submits a subject, watches agents run, gets a report |
-| 6.4 Embed the interactive Cytoscape graph | Judge pans/zooms, clicks a node, sees its risk |
-| 6.5 "Command Center" military-grade visual polish | Looks like a real ops console |
-| 6.6 **Guided Demo** button (pre-authorized safe subject, one click) | A judge runs a full assessment with zero setup |
-
-**Tag:** `v0.7-ui` · **Demo:** hand a judge the laptop → "Run Guided Demo" → they watch HORUS work. This moment moves you to the podium.
-
-### PHASE 7 — Polish, Hardening, Deploy  *(~1 wk)*
-| Task | DoD |
-|---|---|
-| 7.1 Test suite + GitHub Actions CI (lint, mypy, test, bandit/pip-audit) | Green pipeline on every push |
-| 7.2 Observability: structured logs + a simple metrics view | Job count + duration visible |
-| 7.3 Deploy full stack (extend existing Terraform) | Live URL judges can reach |
-| 7.4 Security review pass (secrets management, input validation, no ToS breaches) | Documented review checklist, all green |
-
-**Tag:** `v0.8-prod`
-
-### PHASE 8 — The Pitch (engineered to win)  *(~3–4 days)*
-| Task | DoD |
-|---|---|
-| 8.1 3-minute demo video: problem → live dual-mode demo → architecture | Uploaded, tight, no dead air |
-| 8.2 Update whitepaper/README to the unified HORUS Sentinel story | One coherent document |
-| 8.3 Slide deck (10–12 slides) mapping features → judging criteria | Rehearsed under time |
-| 8.4 Viva dry-run: every member answers auth, graph, model, scoring, ethics | All three fluent on all four |
-
-**Tag:** `v1.0-competition`
-
----
-
-## PART 10 — Why This Wins (Feature → Judging Advantage)
-
-| Judge cares about | Your feature | Why competitors likely lack it |
+| Judge cares about | Feature | Why competitors lack it |
 |---|---|---|
-| Real, working software | Two deployed modes + a model you actually fine-tuned | Most bring a prototype/slides |
-| Technical depth | Multi-agent LangGraph + knowledge graph + RAG + self-hosted fine-tuned brain | Rare to have all four in one |
-| Responsibility (military!) | Authorization engine + passive-only + human validation | Most ignore authorization entirely |
+| Real, working, *capable* software | Active recon + precision scraping + fine-tuned brain, all live | Most bring passive demos or slides |
+| Technical depth | Multi-agent + graph + RAG + self-hosted model + compliant scraper | Rare to have all in one |
+| **Discipline / RoE (military!)** | Authorization engine gating active ops; every action logged | Most offensive demos ignore authorization |
+| Legal/ethical maturity | Compliance-by-construction scraper (robots/rate/law) | Most scrapers are "smash and grab" |
 | Data sovereignty | Self-hosted model — nothing leaves the infrastructure | Most call a cloud API |
-| Cost engineering | Your $4.85 FinOps + free-tier fine-tuning story | Distinctive, memorable |
+| Localization | Full Arabic (RTL) report + UI + model narrative | Almost none localize |
 | Hands-on trust | Judges run the Guided Demo themselves | A live demo beats any slide |
 | A story they remember | "ARGUS's hundred eyes feed the Eye of HORUS" | Most have no narrative |
-| Visual impact | The risk-colored knowledge graph | Single most screenshot-worthy artifact |
-| Honesty / rigor | Human-in-the-loop reflecting the model's real limits | Signals maturity, not weakness |
+| Visual impact | Risk-colored attack-surface graph + real Arabic PDF | Screenshot-worthy artifacts |
+| Academic anchor | Operationalizes MITRE ATT&CK TA0043 for authorized recon | Shows framework fluency |
 
 ---
 
-## PART 11 — Risk Register
+## PART 12 — Risk Register
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Breaking the winning project during the merge | Medium | High | Freeze `horus-geointel/`; build around it |
-| Scope creep (trying to build all of ARGUS perfectly) | High | High | Phases 0–4 + 8 are the minimum winning system; the rest is polish |
-| Free-tier rate limits/quotas (Shodan/Censys/VT) stall mid-phase | Medium | Medium | Cache hard from Phase 1; use fixtures in tests |
-| LLM iteration cost creeps up | Low | Low | Self-hosted model = ~$0 marginal; that's the point |
-| Neo4j/WeasyPrint technical friction | Medium | Low | Half-day spike budget if needed |
-| Judges can't run the demo (setup friction) | Medium | High | Phase 6.6 Guided Demo + pre-authorized safe subject |
-| The "model can't do security" question in the viva | Medium | High | Path C + human validation answers it head-on; rehearse the answer |
-| 3-people waterfall — one blocker stalls all | Medium | Medium | Short phases + clear DoD; timebox blockers, move on, return |
-| Docs drift from code | Medium | Low | Update README at the end of each phase, not just at the finish |
+| Active recon perceived as an "attack tool" | Medium | **High** | Part 0 framing; active only on owned/authorized targets; hard stop before exploitation; lead the demo with the authorization gate |
+| Scraping compliance challenged in viva | Medium | Medium | Compliance-by-construction (Part 4); show the `robots_skip` log live |
+| Sending intelligence queries to a US cloud | Medium | High | `BRAIN_BACKEND=ollama` — fully sovereign, nothing leaves the box |
+| Breaking the winning project | Low | High | `horus-geointel/` frozen |
+| Free-tier rate limits stall a phase | Medium | Medium | Cache hard; fixtures in tests |
+| Nmap/WeasyPrint/Neo4j friction | Low | Low | Pure-Python fallbacks already in place (asyncio scan, fpdf2 PDF, networkx) |
+| Slow CPU inference in the demo | Medium | Low | RTX Ada 5000 on the work box; offline synthesis fallback keeps the demo moving |
 
 ---
 
-## PART 12 — The Minimum Winning System (if time gets tight)
+## PART 13 — Hard Viva Questions (rehearse)
 
-**Must-have (Phases 0–4 + 6 + 8):**
-- ✅ Winning geo-intel mode, preserved
-- ✅ Authorization engine (the ethics flex)
-- ✅ Passive OSINT + geo-event + one enrichment source
-- ✅ The knowledge graph, visualized
-- ✅ Your fine-tuned model as the RAG-grounded reasoning brain + human validation
-- ✅ A unified UI with both modes + a Guided Demo
-- ✅ A rehearsed 3-minute video + viva
+**Q: "Isn't this an attack tool?"**
+A: "No. It performs the *reconnaissance* phase and stops exactly where exploitation begins — no auth
+attempts, no payloads, no exploitation code exists in it. Active scanning runs only on targets we own
+or are authorized for, enforced by the authorization engine, and every active action is logged."
 
-Even this is a **dual-mode, multi-agent, self-hosted-AI, authorization-gated, human-validated intelligence platform with a fine-tuned model at its core** — vastly beyond a #20 project.
+**Q: "What stops someone pointing the scanner at a target they don't own?"**
+A: "The engine itself. Active tools call the authorization check *before* executing; it refuses unless
+the RoE explicitly authorizes active scanning *and* lists the target in scope. A test proves the refusal
+(403). In the demo we only scan our own system under an RoE we generated."
 
----
+**Q: "Is your web scraping legal?"**
+A: "It's compliant by construction — robots.txt checked before every request, transparent identity,
+adaptive rate-limiting and backoff, public data only, provenance on everything. Controls in the code."
 
-## PART 13 — Answering the Hard Viva Questions (rehearse these)
+**Q: "Your model was trained on 2020 geopolitical data — how does it do cyber recon?"**
+A: "It doesn't scan or exploit — it *reasons and reports*. Agents gather current recon and build a
+graph; the model's trained skill is turning correlated intelligence into a structured, prioritized
+report, grounded by RAG over the current graph and ATT&CK — and a human validates every report."
 
-**Q: "Your model was trained on 2020 terrorism data. How can it do cyber recon?"**
-A: "It doesn't do cyber exploitation. It's the *reasoning and reporting* layer. The specialized agents collect current OSINT and build a knowledge graph; the model's trained skill — turning correlated intelligence into a structured, prioritized report — is exactly what we use, grounded by RAG so it reasons over *retrieved current facts*, not its training memory. And a human analyst validates every report before it's final."
-
-**Q: "Is this an attack tool?"**
-A: "No — it's passive and defensive by design. It only consumes already-public data and never touches third-party infrastructure. There's a hard authorization gate, and it stops at *recommendation*. It's a blue-team analyst tool: the same lens an adversary would use, turned around so a defender sees their own exposure first."
-
-**Q: "Why should we trust the AI's output?"**
-A: "You shouldn't trust it blindly — and we designed for that. The risk score is deterministic and reproducible; the model can only adjust it within one band and must log why. Every claim is traceable to a source and timestamp. And a human analyst signs off before anything is final. AI-augmented, human-authoritative."
-
-**Q: "What's genuinely novel here?"**
-A: "Three things together: a multi-agent OSINT swarm that builds a *queryable intelligence graph*; a *self-hosted, fine-tuned* domain model as the reasoning core (data sovereignty on a $5 budget); and authorization + chain-of-custody + human validation as first-class features. Most projects have one of these. We integrated all three into a working system."
+**Q: "Where does the data go?"**
+A: "Nowhere it shouldn't. The model is self-hosted via Ollama by default — full data sovereignty. An
+online Hugging Face mode exists for convenience, but for an intelligence deployment we run it in-house."
 
 ---
 
-## PART 14 — Immediate Next Steps (start now)
+## PART 14 — Implementation Status (verified reality)
 
-1. As a team, lock the pitch (Part 0.2) until all three of you can say it in one breath.
-2. Execute Phase 0.1 — create `horus-sentinel`, move the winning project in untouched, confirm it still runs.
-3. Execute Phase 0.2 — `docker-compose` with the model serving locally via Ollama.
-4. Come back and we'll write, together, the first real code:
-   - `schemas/roe.py` + `core/authorization.py` (Phase 1)
-   - `horus_brain/horus_provider.py` (the bridge)
-   - the updated unified whitepaper
+- **~97 tests pass** (`pytest -q`), including 7 active-recon authorization-gate tests and active-tool
+  tests (real localhost port-scan listener, robots-compliant crawl, stubbed DNS). `ruff check` +
+  `ruff format` clean.
+- **The authorization gate is proven over HTTP:** out-of-scope active → 403; missing
+  `active_authorized` → 403; region target → 403; in-scope + authorized → 201.
+- **Real Arabic RTL PDF** renders end-to-end and downloads from the UI / API.
+- **Bilingual** UI + report + model narrative; language toggle persists.
+- **Pluggable brain** verified: local Ollama serves `horus-osint`; HF token validated + saved at
+  first run; graceful offline synthesis when neither is reachable.
+- Runs **zero-infra** (`uvicorn api.main:app`) or **full stack** (`docker compose … up`).
 
 ---
 
-*HORUS Sentinel preserves the award-winning Horus-OSINT project completely, adds a passive multi-agent OSINT collection engine (ARGUS — "the many-eyed collection engine that feeds HORUS"), and unifies both under one brand, one self-hosted reasoning brain, and one Command Center — engineered specifically to move from rank #20 to a podium finish at ITC-Egypt Track 3, and kept scope-honest for a defensive military audience. This document is the technical and strategic source of truth for the build.*
+## PART 15 — Immediate Next Steps
+1. Lock the Part 0 framing + the pitch until all three can say them cold. **This is the shield in the viva.**
+2. On the RTX box: load the fine-tuned model into Ollama (see `horus-sentinel/RUN.md`) so the narrative
+   is model-authored (`generated_by: mahmoudalyosify/Horus-OSINT` or `horus-osint`).
+3. Phase 8: CI green on push, a short security/compliance review checklist, deploy, and the 3-minute
+   demo video (lead with the authorization gate refusing an out-of-scope active scan).
+
+---
+
+*HORUS Sentinel is an authorized offensive-reconnaissance and intelligence platform for real
+educational use. It performs active reconnaissance on owned/authorized targets and precision,
+compliant scraping of public sources, correlates findings into an attack-surface/intelligence graph,
+and uses the award-winning fine-tuned model — self-hosted for data sovereignty — as its reasoning core
+to produce precise, chain-of-custody intelligence reports in Arabic or English. It executes the full
+reconnaissance phase of a professional engagement — TA0043 — and stops, by design, exactly where
+exploitation would begin. This document is the single technical and strategic source of truth.*
