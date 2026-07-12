@@ -75,6 +75,7 @@ async def root() -> dict[str, str]:
     """Root — points to the Command Center UI and the interactive docs."""
     return {
         "message": "HORUS Sentinel API. Open /ui for the Command Center, /docs for the API.",
+        "slogan": "The eye that never sleeps.",
         "tagline": "ARGUS's hundred eyes gather; the Eye of HORUS judges.",
     }
 

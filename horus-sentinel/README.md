@@ -4,7 +4,9 @@
 
 ### Autonomous, Multi-Agent OSINT & Threat-Intelligence Platform
 
-*"ARGUS's hundred eyes gather the intelligence — the Eye of HORUS delivers the judgment."*
+### *"The eye that never sleeps."*
+
+*ARGUS's hundred eyes gather the intelligence — the Eye of HORUS delivers the judgment.*
 
 [![CI](https://github.com/MahmoudAlyosify/horus-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MahmoudAlyosify/horus-sentinel/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

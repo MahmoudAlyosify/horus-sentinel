@@ -51,3 +51,47 @@ def test_chat_rejects_empty_query():
     # An empty query fails validation (min_length=1) before any model call is attempted.
     resp = client.post("/chat", json={"query": ""})
     assert resp.status_code == 422
+
+
+def test_chat_report_pdf_is_real_pdf():
+    resp = client.post(
+        "/chat/report",
+        json={
+            "question": "What happened in Egypt in 2013?",
+            "answer": "In 2013 Egypt experienced major political upheaval centered on Cairo.",
+            "generated_by": "horus-selfhosted",
+            "language": "en",
+            "fmt": "pdf",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"] == "application/pdf"
+    assert "attachment" in resp.headers["content-disposition"]
+    assert resp.content[:5] == b"%PDF-"
+
+
+def test_chat_report_html_contains_qa():
+    resp = client.post(
+        "/chat/report",
+        json={
+            "question": "ما هو الوضع؟",
+            "answer": "تقييم موجز للوضع.",
+            "generated_by": "horus-selfhosted",
+            "language": "ar",
+            "fmt": "html",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"].startswith("text/html")
+    body = resp.text
+    assert "ما هو الوضع؟" in body
+    assert "تقييم موجز للوضع." in body
+    assert "حورس سنتينل" in body  # branded
+
+
+def test_chat_report_rejects_bad_format():
+    resp = client.post(
+        "/chat/report",
+        json={"question": "q", "answer": "a", "fmt": "xml"},
+    )
+    assert resp.status_code == 400

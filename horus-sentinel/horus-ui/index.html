@@ -193,7 +193,7 @@ const BAND={ar:{Critical:"حرجة",High:"عالية",Medium:"متوسطة",Low:
             en:{Critical:"Critical",High:"High",Medium:"Medium",Low:"Low",Info:"Info"}};
 
 const T={
- ar:{app_sub:"مركز القيادة · عيون أرغوس تجمع · وعين حورس تحكم",mode_recon:"استطلاع OSINT",mode_geo:"استخبارات جيوسياسية",
+ ar:{app_sub:"العين التي لا تنام · مركز القيادة",mode_recon:"استطلاع OSINT",mode_geo:"استخبارات جيوسياسية",
   new_assessment:"تقييم جديد",subject_type:"نوع الموضوع",opt_domain:"نطاق (مملوك / مصرّح به)",opt_region:"منطقة + إطار زمني",
   subject_label:"الموضوع",year_from:"من سنة",year_to:"إلى سنة",analyst_label:"المحلل (موقّع التفويض)",
   active_toggle:"استطلاع فعّال هجومي (أهدافك المصرّح بيها فقط)",
@@ -205,7 +205,7 @@ const T={
   geo_greeting:"أنا حورس. اسألني أي سؤال استخباراتي أو جيوسياسي.",geo_send:"إرسال",
   geo_hint:"هذا الوضع يقابل محادثة Horus-OSINT الأصلية.",
   geo_thinking:"…حورس يفكّر",geo_error:"تعذّر الوصول إلى النموذج. حاول مرة أخرى.",
-  geo_note:"استدلال النموذج — غير مُسنَد إلى المصادر المؤكدة",
+  geo_note:"استدلال النموذج — غير مُسنَد إلى المصادر المؤكدة",geo_download:"⬇ تحميل التقرير (PDF)",
   entities:"كيانات",top_band:"أعلى نطاق",critical_cves:"ثغرات حرجة",findings:"نتائج",
   exec_summary:"الملخص التنفيذي",geopolitical:"السياق",threat_assessment:"تقييم التهديد",prioritized:"النتائج ذات الأولوية",
   download_pdf:"⬇ تحميل تقرير PDF",reasoning_by:"التحليل بواسطة",recommendation:"التوصية",framework:"الإطار المرجعي",none:"لا توجد.",
@@ -216,7 +216,7 @@ const T={
   be_serverless:"HF Serverless فقط",be_endpoint:"HF Endpoint مخصص",be_ollama:"Ollama محلي فقط (سيادي)",
   setup_save:"حفظ وتفعيل",setup_later:"لاحقًا (دون اتصال)",
   brain_online:"العقل: أونلاين",brain_local:"العقل: محلي (Ollama)",brain_offline:"العقل: دون اتصال — للإعداد"},
- en:{app_sub:"Command Center · ARGUS eyes gather · the Eye of HORUS judges",mode_recon:"OSINT-Recon",mode_geo:"Geo-Intel",
+ en:{app_sub:"The eye that never sleeps · Command Center",mode_recon:"OSINT-Recon",mode_geo:"Geo-Intel",
   new_assessment:"New Assessment",subject_type:"Subject type",opt_domain:"Domain (owned / authorized)",opt_region:"Region + timeframe",
   subject_label:"Subject",year_from:"Year from",year_to:"Year to",analyst_label:"Analyst (RoE signer)",
   active_toggle:"Active offensive recon (authorized targets only)",
@@ -228,7 +228,7 @@ const T={
   geo_greeting:"I am HORUS. Ask me any intelligence or geopolitical question.",geo_send:"Send",
   geo_hint:"This view maps to the original Horus-OSINT chat.",
   geo_thinking:"…HORUS is thinking",geo_error:"Could not reach the model. Please try again.",
-  geo_note:"model reasoning — not corpus-grounded",
+  geo_note:"model reasoning — not corpus-grounded",geo_download:"⬇ Download report (PDF)",
   entities:"Entities",top_band:"Top band",critical_cves:"Critical CVEs",findings:"Findings",
   exec_summary:"Executive Summary",geopolitical:"Context",threat_assessment:"Threat Assessment",prioritized:"Prioritized Findings",
   download_pdf:"⬇ Download PDF report",reasoning_by:"Reasoning by",recommendation:"Recommendation",framework:"Framework",none:"None.",
@@ -373,6 +373,7 @@ function renderGraph(graph){
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+const chatHistory=[];
 async function geoAsk(){
   const inp=document.getElementById('geoInput'); const q=inp.value.trim(); if(!q) return;
   const chat=document.getElementById('chat');
@@ -386,13 +387,28 @@ async function geoAsk(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     thinking.remove();
+    const idx=chatHistory.push({q:q,a:d.answer,by:d.generated_by||''})-1;
     chat.innerHTML+=`<div class="bubble horus"><div class="answer">${escapeHtml(d.answer)}</div>`+
-      `<div class="note">${t('geo_note')} · <code>${escapeHtml(d.generated_by||'')}</code></div></div>`;
+      `<div class="note">${t('geo_note')} · <code>${escapeHtml(d.generated_by||'')}</code>`+
+      ` · <a href="#" onclick="downloadChat(${idx});return false;">${t('geo_download')}</a></div></div>`;
   }catch(e){
     thinking.remove();
     chat.innerHTML+=`<div class="bubble horus">${t('geo_error')}</div>`;
   }
   chat.scrollTop=chat.scrollHeight;
+}
+
+async function downloadChat(i){
+  const item=chatHistory[i]; if(!item) return;
+  try{
+    const r=await fetch(API+'/chat/report',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:item.q,answer:item.a,generated_by:item.by,language:LANG,fmt:'pdf'})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='horus-chat-report.pdf';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }catch(e){ alert(t('geo_error')); }
 }
 
 async function refreshBrain(){

@@ -40,17 +40,18 @@ def render_pdf(html: str, context: dict | None = None) -> bytes | None:
     """Produce a real PDF. Returns None (non-fatal) only if every path fails.
 
     Order of preference:
-      1. Arabic report language → the pure-Python fpdf2 Arabic RTL generator (no system libs,
-         works on any OS). This is the primary path for the intelligence deliverable.
-      2. WeasyPrint HTML→PDF (English, or when explicitly available with native libs).
+      1. The pure-Python fpdf2 generator (Arabic RTL or English LTR, chosen by report_language).
+         No system libraries — works on any OS, so this is the primary path for both languages.
+      2. WeasyPrint HTML→PDF — a last-resort fallback only if the fpdf2 path somehow fails and
+         the native GTK/Pango libs happen to be installed.
     """
-    if context is not None and settings.report_language == "ar":
+    if context is not None:
         try:
-            from reporting.arabic_pdf import render_arabic_pdf
+            from reporting.arabic_pdf import render_report_pdf
 
-            return render_arabic_pdf(context)
+            return render_report_pdf(context, settings.report_language)
         except Exception as exc:  # never let PDF failure break the pipeline
-            log.warning("arabic_pdf_failed_fallback_weasyprint", error=str(exc))
+            log.warning("fpdf_report_failed_fallback_weasyprint", error=str(exc))
 
     try:
         from weasyprint import HTML  # lazy: heavy native deps on some platforms

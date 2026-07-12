@@ -24,3 +24,8 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{_TMP_DB}")
 os.environ["BRAIN_BACKEND"] = "ollama"
 os.environ["HF_TOKEN"] = ""
 os.environ["HF_ENDPOINT_URL"] = ""
+
+# Pin the report language so rendering assertions are deterministic. The report tests assert
+# the Arabic (default) brand and section anchors; a developer running with REPORT_LANGUAGE=en
+# in `.env` must not flip the suite to English output and break those assertions.
+os.environ["REPORT_LANGUAGE"] = "ar"
