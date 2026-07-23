@@ -6,7 +6,7 @@
 
 *"ARGUS's hundred eyes gather the intelligence — the Eye of HORUS delivers the judgment."*
 
-[![CI](https://github.com/MahmoudAlyosify/horus-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MahmoudAlyosify/horus-sentinel/actions)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org)
 [![Model on HF](https://img.shields.io/badge/🤗%20Model-Horus--OSINT-yellow.svg)](https://huggingface.co/mahmoudalyosify/Horus-OSINT)
