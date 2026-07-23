@@ -12,6 +12,7 @@
 [![Model on HF](https://img.shields.io/badge/🤗%20Model-Horus--OSINT-yellow.svg)](https://huggingface.co/mahmoudalyosify/Horus-OSINT)
 
 **ITC-Egypt 2026 · Track 3 — Intelligent Software Systems · Air Defence College**
+<img width="1448" height="1086" alt="ITC-2026-T3-0726" src="https://github.com/user-attachments/assets/e2ee8bab-5ddb-430e-a475-fe273a4ab1da" />
 
 </div>
 
